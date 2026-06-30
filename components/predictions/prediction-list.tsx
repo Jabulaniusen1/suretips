@@ -52,12 +52,19 @@ export function PredictionList({ predictions, emptyLabel = "No games scheduled f
             {prediction.odds && <p className="text-xs text-muted-foreground">Odds {prediction.odds}</p>}
           </div>
           <ConfidenceRing value={prediction.confidence} />
-          <Badge
-            variant={prediction.status === "live" ? "default" : "secondary"}
-            className={prediction.status === "live" ? "bg-brand text-brand-foreground" : ""}
-          >
-            {STATUS_LABEL[prediction.status]}
-          </Badge>
+          <div className="flex flex-col items-end gap-1">
+            {prediction.status !== "not_started" && prediction.home_score !== null && prediction.away_score !== null && (
+              <p className="text-sm font-bold tabular-nums">
+                {prediction.home_score}-{prediction.away_score}
+              </p>
+            )}
+            <Badge
+              variant={prediction.status === "live" ? "default" : "secondary"}
+              className={prediction.status === "live" ? "bg-brand text-brand-foreground" : ""}
+            >
+              {STATUS_LABEL[prediction.status]}
+            </Badge>
+          </div>
         </Link>
       ))}
     </div>
