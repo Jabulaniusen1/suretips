@@ -4,7 +4,7 @@ import { getPlanBySlug } from "@/lib/data/plans";
 import { getCurrentUser } from "@/lib/data/current-user";
 import { getUserSubscriptionForPlan } from "@/lib/data/subscriptions";
 import { getPredictionsForPlan } from "@/lib/data/predictions";
-import { getDateRange, type DateNavPeriod } from "@/lib/utils/date";
+import { getDateRange } from "@/lib/utils/date";
 import { isPlanUnlocked, isPendingActivation, isExpired } from "@/lib/plan-access";
 import { VIP_PLAN_SLUGS } from "@/lib/constants";
 import { PlanResultsPanel } from "@/components/winnings/plan-results-panel";
@@ -12,7 +12,6 @@ import { VipLockedCard } from "@/components/dashboard/vip-locked-card";
 import { VipPendingActivationCard } from "@/components/dashboard/vip-pending-activation-card";
 import { VipExpiredCard } from "@/components/dashboard/vip-expired-card";
 import { PlanCountdown } from "@/components/dashboard/plan-countdown";
-import { DateNav } from "@/components/predictions/date-nav";
 import { PredictionList } from "@/components/predictions/prediction-list";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -26,7 +25,7 @@ export default async function VipZonePage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ period?: string; date?: string; resultsDate?: string }>;
+  searchParams: Promise<{ resultsDate?: string }>;
 }) {
   const { slug } = await params;
   if (!(VIP_PLAN_SLUGS as readonly string[]).includes(slug)) notFound();
@@ -37,7 +36,7 @@ export default async function VipZonePage({
   const user = await getCurrentUser();
   if (!user) notFound();
 
-  const { period, date, resultsDate } = await searchParams;
+  const { resultsDate } = await searchParams;
   const subscription = await getUserSubscriptionForPlan(user.authId, plan.id);
 
   const unlocked = isPlanUnlocked(plan, subscription);
@@ -60,9 +59,6 @@ export default async function VipZonePage({
             <UnlockedPanel
               planId={plan.id}
               planName={plan.name}
-              period={date ? "custom" : ((period as DateNavPeriod) ?? "today")}
-              date={date}
-              basePath={basePath}
               expiryDate={subscription!.expiry_date}
             />
           ) : pendingActivation ? (
@@ -93,19 +89,13 @@ export default async function VipZonePage({
 
 async function UnlockedPanel({
   planId,
-  basePath,
-  period,
-  date,
   expiryDate,
 }: {
   planId: string;
   planName: string;
-  basePath: string;
-  period: DateNavPeriod;
-  date?: string;
   expiryDate: string | null;
 }) {
-  const range = getDateRange(period, date ? new Date(date) : undefined);
+  const range = getDateRange("today");
   const predictions = await getPredictionsForPlan(planId, range, { unlocked: true });
 
   return (
@@ -116,9 +106,6 @@ async function UnlockedPanel({
           <p className="text-sm text-muted-foreground">{range.label}</p>
         </div>
         {expiryDate && <PlanCountdown expiryDate={expiryDate} />}
-      </div>
-      <div className="mt-4">
-        <DateNav active={period} basePath={basePath} currentDate={range.date} />
       </div>
       <div className="mt-4">
         <PredictionList predictions={predictions} />

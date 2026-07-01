@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Gamepad2, Crown, Target, Send } from "lucide-react";
+import { Crown, Target, Send } from "lucide-react";
 import { DashboardTile } from "@/components/dashboard/dashboard-tile";
 import { getSiteConfig } from "@/lib/data/site-config";
 import { PLAN_SLUGS } from "@/lib/constants";
@@ -13,16 +13,9 @@ export default async function DashboardPage() {
     <div>
       <h1 className="text-xl font-bold">VIP Zone</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Pick a package below to view today&apos;s predictions or play our free daily game.
+        Pick a package below to view today&apos;s predictions.
       </p>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <DashboardTile
-          href="/dashboard/free-games"
-          title="Free Games"
-          description="Play free games and win rewards"
-          icon={Gamepad2}
-          iconClassName="bg-sky-100 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400"
-        />
         <DashboardTile
           href={`/dashboard/vip/${PLAN_SLUGS.DAILY_2_ODDS}`}
           title="Daily 2 Odds Combo"

@@ -1,5 +1,4 @@
 export const PLAN_SLUGS = {
-  FREE_GAMES: "free-games",
   DAILY_2_ODDS: "daily-2-odds-combo",
   DAILY_5_ODDS: "daily-5-odds-combo",
   DAILY_50_ODDS: "daily-50-odds-combo",

@@ -62,45 +62,5 @@ export async function GET(request: NextRequest) {
     if (!error) updated += 1;
   }
 
-  const { data: ungradedEntries } = await supabase.from("free_games_entries").select("*").eq("graded", false);
-
-  let freeGamesScored = 0;
-  const fixtureOutcomeCache = new Map<string, "home" | "away" | "draw" | null>();
-
-  for (const entry of ungradedEntries ?? []) {
-    const pick = entry.prediction as { prediction_id?: string; choice?: string };
-    if (!pick.prediction_id || !pick.choice) continue;
-
-    if (!fixtureOutcomeCache.has(pick.prediction_id)) {
-      const { data: fgPrediction } = await supabase
-        .from("predictions")
-        .select("status, external_fixture_id")
-        .eq("id", pick.prediction_id)
-        .maybeSingle();
-
-      if (!fgPrediction || fgPrediction.status !== "finished" || !fgPrediction.external_fixture_id) {
-        fixtureOutcomeCache.set(pick.prediction_id, null);
-        continue;
-      }
-
-      const fixture = await getFixtureById(fgPrediction.external_fixture_id);
-      if (!fixture || fixture.goals.home === null || fixture.goals.away === null) {
-        fixtureOutcomeCache.set(pick.prediction_id, null);
-        continue;
-      }
-
-      const outcome =
-        fixture.goals.home > fixture.goals.away ? "home" : fixture.goals.away > fixture.goals.home ? "away" : "draw";
-      fixtureOutcomeCache.set(pick.prediction_id, outcome);
-    }
-
-    const outcome = fixtureOutcomeCache.get(pick.prediction_id);
-    if (outcome === null || outcome === undefined) continue;
-
-    const points = pick.choice === outcome ? 10 : 0;
-    await supabase.from("free_games_entries").update({ points_earned: points, graded: true }).eq("id", entry.id);
-    freeGamesScored += 1;
-  }
-
-  return NextResponse.json({ updated, graded, freeGamesScored });
+  return NextResponse.json({ updated, graded });
 }
