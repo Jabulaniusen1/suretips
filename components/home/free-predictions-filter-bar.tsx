@@ -8,7 +8,7 @@ export function FreePredictionsFilterBar({ active }: { active: string }) {
       {FREE_PREDICTIONS_FILTERS.map((filter) => (
         <Link
           key={filter.id}
-          href={`/?filter=${filter.id}#free-predictions`}
+          href={`/tips/${filter.id}`}
           className={cn(
             "shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
             active === filter.id

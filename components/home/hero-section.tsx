@@ -47,11 +47,11 @@ export async function HeroSection() {
               {config.hero.secondary_cta_label}
             </Button>
           </div>
-          <dl className="mt-10 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
+          <dl className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
             {TRUST_ITEMS.map((item) => (
-              <div key={item.label} className="flex items-center gap-2 text-sm text-zinc-300">
-                <item.icon className="size-4 shrink-0 text-brand" />
-                {item.label}
+              <div key={item.label} className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-300">
+                <item.icon className="mt-0.5 size-4 shrink-0 text-brand" />
+                <span>{item.label}</span>
               </div>
             ))}
           </dl>
