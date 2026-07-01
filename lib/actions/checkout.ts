@@ -19,7 +19,7 @@ export async function submitCheckout(formData: FormData) {
 
   if (!planId || !amount || !currency || !methodId) throw new Error("Missing required fields.");
 
-  // Determine if a user is logged in
+  // Identify the user if logged in (for attaching to the transaction record only)
   const serverClient = await createClient();
   const { data: { user } } = await serverClient.auth.getUser();
   const userId = user?.id ?? null;
@@ -38,29 +38,11 @@ export async function submitCheckout(formData: FormData) {
     .upload(path, bytes, { contentType: file.type });
   if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
 
-  // Create subscription row only for logged-in users
-  let subscriptionId: string | undefined;
-  if (userId) {
-    const { data: sub } = await supabase
-      .from("user_subscriptions")
-      .upsert(
-        {
-          user_id: userId,
-          plan_id: planId,
-          plan_status: "pending",
-          subscription_fee_paid: false,
-          activation_fee_paid: false,
-        },
-        { onConflict: "user_id,plan_id" }
-      )
-      .select("id")
-      .single();
-    subscriptionId = sub?.id;
-  }
-
+  // Everyone uses the same code-based flow — no subscription row is created.
+  // Admin confirms the proof, generates a 5-digit access code, and sends it
+  // to the user. The user enters the code on the plan page to unlock access.
   const { error: txError } = await supabase.from("transactions").insert({
     user_id: userId,
-    subscription_id: subscriptionId ?? null,
     plan_id: planId,
     amount,
     currency,
@@ -78,14 +60,14 @@ export async function submitCheckout(formData: FormData) {
   });
   if (txError) throw new Error(`Transaction error: ${txError.message}`);
 
-  // Notify logged-in users only (guests have no notification inbox)
+  // Notify logged-in users (guests have no inbox)
   if (userId) {
     const { data: plan } = await supabase.from("plans").select("name").eq("id", planId).single();
     await supabase.from("notifications").insert({
       user_id: userId,
       type: "payment_submitted",
       title: "Payment submitted",
-      message: `Your subscription payment for ${plan?.name ?? "your plan"} is pending review.`,
+      message: `Your payment for ${plan?.name ?? "your plan"} is pending review. Message support to receive your access code once confirmed.`,
     });
   }
 }

@@ -25,38 +25,17 @@ export async function confirmSubscriptionPayment(transactionId: string) {
 
   const durationDays = (transaction.metadata.duration_days ?? 30) as number;
 
-  // Generate access code for all confirmed payments (guest + logged-in)
-  await generateAccessCode(transactionId, plan.id, plan.slug, durationDays);
-
-  // Update subscription for logged-in users only
-  if (transaction.user_id && transaction.subscription_id) {
-    if (plan.requires_activation) {
-      await supabase
-        .from("user_subscriptions")
-        .update({ plan_status: "pending_activation", subscription_fee_paid: true })
-        .eq("id", transaction.subscription_id);
-    } else {
-      const now = new Date();
-      await supabase
-        .from("user_subscriptions")
-        .update({
-          plan_status: "active",
-          subscription_fee_paid: true,
-          start_date: now.toISOString(),
-          expiry_date: addDays(now, durationDays).toISOString(),
-        })
-        .eq("id", transaction.subscription_id);
-    }
-  }
+  // Generate access code — this is the only access mechanism now (same for
+  // guests and logged-in users). The admin copies it from the transactions
+  // table and sends it to the user manually.
+  const code = await generateAccessCode(transactionId, plan.id, plan.slug, durationDays);
 
   if (transaction.user_id) {
     await notifyUser(
       supabase,
       transaction.user_id,
-      "Payment confirmed",
-      plan.requires_activation
-        ? `Your ${plan.name} subscription payment has been confirmed. Pay the activation fee to unlock predictions.`
-        : `Your ${plan.name} subscription is now active. Enjoy your predictions!`
+      "Payment confirmed — your access code is ready",
+      `Your payment for ${plan.name} has been confirmed. Your access code is: ${code}. Go to /plans/${plan.slug} and enter it to unlock your predictions.`
     );
   }
 
