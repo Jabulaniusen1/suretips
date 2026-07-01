@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, Copy } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { Check, CheckCircle, Copy, ExternalLink, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { formatPrice } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils";
+import { submitCheckout } from "@/lib/actions/checkout";
 import type { Tables } from "@/types/database";
 
 export function CheckoutClient({
@@ -16,24 +17,23 @@ export function CheckoutClient({
   price,
   amount,
   paymentMethods,
-  transactionType,
-  userId,
   duration,
-  existingSubscriptionId,
+  supportLink,
 }: {
   plan: Tables<"plans">;
   price: Tables<"plan_prices">;
   amount: number;
   paymentMethods: Tables<"payment_methods">[];
-  transactionType: "subscription" | "activation";
-  userId: string;
   duration: 7 | 30;
-  existingSubscriptionId?: string;
+  supportLink: string;
 }) {
-  const router = useRouter();
   const [methodId, setMethodId] = useState<string | undefined>(paymentMethods[0]?.id);
   const [file, setFile] = useState<File | null>(null);
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const selectedMethod = paymentMethods.find((m) => m.id === methodId);
 
@@ -47,57 +47,21 @@ export function CheckoutClient({
     if (!file) return toast.error("Upload your proof of payment");
 
     setSubmitting(true);
-    const supabase = createClient();
-
     try {
-      const path = `${userId}/${crypto.randomUUID()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage.from("payment-proofs").upload(path, file);
-      if (uploadError) throw uploadError;
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("planId", plan.id);
+      formData.append("amount", String(amount));
+      formData.append("currency", price.currency);
+      formData.append("duration", String(duration));
+      formData.append("methodId", selectedMethod.id);
+      formData.append("methodName", selectedMethod.name);
+      if (contactName) formData.append("contactName", contactName);
+      if (contactEmail) formData.append("contactEmail", contactEmail);
+      if (contactPhone) formData.append("contactPhone", contactPhone);
 
-      let subscriptionId = existingSubscriptionId;
-
-      if (transactionType === "subscription") {
-        const { data: subscription, error: subError } = await supabase
-          .from("user_subscriptions")
-          .upsert(
-            {
-              user_id: userId,
-              plan_id: plan.id,
-              plan_status: "pending",
-              subscription_fee_paid: false,
-              activation_fee_paid: false,
-            },
-            { onConflict: "user_id,plan_id" }
-          )
-          .select()
-          .single();
-        if (subError) throw subError;
-        subscriptionId = subscription.id;
-      }
-
-      const { error: txError } = await supabase.from("transactions").insert({
-        user_id: userId,
-        subscription_id: subscriptionId,
-        plan_id: plan.id,
-        amount,
-        currency: price.currency,
-        payment_method_name: selectedMethod.name,
-        payment_type: transactionType,
-        status: "pending",
-        metadata: { payment_proof_url: path, duration_days: duration, payment_method_id: selectedMethod.id },
-      });
-      if (txError) throw txError;
-
-      await supabase.from("notifications").insert({
-        user_id: userId,
-        type: "payment_submitted",
-        title: "Payment submitted",
-        message: `Your ${transactionType === "activation" ? "activation fee" : "subscription"} payment for ${plan.name} is pending review. We'll notify you once it's confirmed.`,
-      });
-
-      toast.success("Payment submitted! We'll confirm it shortly.");
-      router.push(`/dashboard/vip/${plan.slug}`);
-      router.refresh();
+      await submitCheckout(formData);
+      setSubmitted(true);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Something went wrong. Please try again.");
     } finally {
@@ -105,23 +69,90 @@ export function CheckoutClient({
     }
   }
 
+  if (submitted) {
+    return (
+      <div className="mx-auto max-w-lg rounded-2xl border border-border bg-card p-8 text-center">
+        <div className="flex justify-center">
+          <CheckCircle className="size-14 text-brand" />
+        </div>
+        <h2 className="mt-4 text-xl font-bold">Payment Proof Received!</h2>
+        <p className="mt-2 text-muted-foreground">
+          Our team will verify your proof of payment. Once confirmed, you&apos;ll receive a{" "}
+          <strong>5-digit access code</strong> — message our support team to provide your contact
+          details and get your code.
+        </p>
+        {supportLink ? (
+          <Button
+            className="mt-6 w-full"
+            size="lg"
+            render={<a href={supportLink} target="_blank" rel="noopener noreferrer" />}
+          >
+            <MessageCircle className="mr-2 size-4" />
+            Message Support
+            <ExternalLink className="ml-2 size-3.5" />
+          </Button>
+        ) : (
+          <p className="mt-6 text-sm text-muted-foreground">
+            Contact our support team to receive your access code once payment is verified.
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-8 lg:grid-cols-2">
-      <div className="rounded-2xl border border-border bg-card p-6">
-        <h2 className="font-bold">Order Summary</h2>
-        <div className="mt-4 flex items-center justify-between border-b border-border pb-4">
-          <div>
-            <p className="font-medium">{plan.name}</p>
-            <p className="text-sm text-muted-foreground">
-              {transactionType === "activation" ? "Activation Fee" : `${duration === 7 ? "1 Week" : "1 Month"} Subscription`}
-            </p>
+      <div className="space-y-6">
+        <div className="rounded-2xl border border-border bg-card p-6">
+          <h2 className="font-bold">Order Summary</h2>
+          <div className="mt-4 flex items-center justify-between border-b border-border pb-4">
+            <div>
+              <p className="font-medium">{plan.name}</p>
+              <p className="text-sm text-muted-foreground">
+                {duration === 7 ? "1 Week" : "1 Month"} Subscription
+              </p>
+            </div>
+            <p className="text-xl font-bold">{formatPrice(amount, price.currency)}</p>
           </div>
-          <p className="text-xl font-bold">{formatPrice(amount, price.currency)}</p>
+          <p className="mt-4 text-sm text-muted-foreground">
+            After you submit your proof of payment, our team manually verifies it and sends you an
+            access code — usually within a few hours.
+          </p>
         </div>
-        <p className="mt-4 text-sm text-muted-foreground">
-          After you submit your proof of payment, our team manually verifies it and activates your access —
-          usually within a few hours.
-        </p>
+
+        <div className="rounded-2xl border border-border bg-card p-6">
+          <h2 className="font-bold">Your Contact Info</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            So we can reach you with your access code. No account needed.
+          </p>
+          <div className="mt-4 space-y-3">
+            <div className="space-y-1">
+              <Label>Name</Label>
+              <Input
+                placeholder="Your name"
+                value={contactName}
+                onChange={(e) => setContactName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                placeholder="your@email.com"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Phone / WhatsApp</Label>
+              <Input
+                placeholder="+234..."
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-6">
@@ -138,11 +169,15 @@ export function CheckoutClient({
             >
               <RadioGroupItem value={method.id} id={method.id} />
               <span className="font-medium">{method.name}</span>
-              <span className="ml-auto text-xs uppercase text-muted-foreground">{method.type.replace("_", " ")}</span>
+              <span className="ml-auto text-xs uppercase text-muted-foreground">
+                {method.type.replace("_", " ")}
+              </span>
             </label>
           ))}
           {paymentMethods.length === 0 && (
-            <p className="text-sm text-muted-foreground">No payment methods configured for your country yet.</p>
+            <p className="text-sm text-muted-foreground">
+              No payment methods configured for your country yet.
+            </p>
           )}
         </RadioGroup>
 
@@ -176,11 +211,18 @@ export function CheckoutClient({
               <Check className="size-4" /> {file.name}
             </span>
           ) : (
-            <span className="text-sm text-muted-foreground">Click to upload a screenshot or receipt</span>
+            <span className="text-sm text-muted-foreground">
+              Click to upload a screenshot or receipt
+            </span>
           )}
         </label>
 
-        <Button className="mt-6 w-full" size="lg" onClick={handleSubmit} disabled={submitting}>
+        <Button
+          className="mt-6 w-full"
+          size="lg"
+          onClick={handleSubmit}
+          disabled={submitting || paymentMethods.length === 0}
+        >
           {submitting ? "Submitting…" : "Submit Payment Proof"}
         </Button>
       </div>

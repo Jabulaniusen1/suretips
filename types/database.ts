@@ -173,7 +173,7 @@ export interface Database {
       transactions: {
         Row: {
           id: string;
-          user_id: string;
+          user_id: string | null;
           subscription_id: string | null;
           plan_id: string;
           amount: number;
@@ -186,19 +186,43 @@ export interface Database {
             duration_days?: 7 | 30;
             payment_method_id?: string;
             rejection_reason?: string;
+            contact_name?: string;
+            contact_email?: string;
+            contact_phone?: string;
             [key: string]: unknown;
           };
           created_at: string;
           updated_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["transactions"]["Row"]> & {
-          user_id: string;
           plan_id: string;
           amount: number;
           currency: string;
           payment_type: PaymentType;
         };
         Update: Partial<Database["public"]["Tables"]["transactions"]["Row"]>;
+          Relationships: [];
+      };
+      access_codes: {
+        Row: {
+          id: string;
+          code: string;
+          plan_id: string;
+          plan_slug: string;
+          duration_days: number;
+          expires_at: string;
+          transaction_id: string | null;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["access_codes"]["Row"]> & {
+          code: string;
+          plan_id: string;
+          plan_slug: string;
+          duration_days: number;
+          expires_at: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["access_codes"]["Row"]>;
           Relationships: [];
       };
       blog_posts: {

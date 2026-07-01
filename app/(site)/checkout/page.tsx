@@ -4,7 +4,7 @@ import { getPlanBySlug } from "@/lib/data/plans";
 import { getPlanPrices, resolvePrice } from "@/lib/data/plan-prices";
 import { getPaymentMethodsForCountry } from "@/lib/data/payment-methods";
 import { getCurrentUser } from "@/lib/data/current-user";
-import { getUserSubscriptionForPlan } from "@/lib/data/subscriptions";
+import { getSiteConfig } from "@/lib/data/site-config";
 import { CheckoutClient } from "@/components/checkout/checkout-client";
 
 export const metadata: Metadata = { title: "Checkout" };
@@ -12,30 +12,26 @@ export const metadata: Metadata = { title: "Checkout" };
 export default async function CheckoutPage({
   searchParams,
 }: {
-  searchParams: Promise<{ plan?: string; duration?: string; country?: string; type?: string }>;
+  searchParams: Promise<{ plan?: string; duration?: string; country?: string }>;
 }) {
-  const { plan: planSlug, duration: durationParam, country: countryParam, type } = await searchParams;
+  const { plan: planSlug, duration: durationParam, country: countryParam } = await searchParams;
   if (!planSlug) redirect("/subscriptions");
-
-  const user = await getCurrentUser();
-  if (!user) redirect(`/login?redirect=${encodeURIComponent(`/checkout?plan=${planSlug}`)}`);
 
   const plan = await getPlanBySlug(planSlug);
   if (!plan) notFound();
 
-  const transactionType = type === "activation" ? "activation" : "subscription";
-  if (transactionType === "activation" && !plan.requires_activation) redirect(`/dashboard/vip/${plan.slug}`);
+  const user = await getCurrentUser();
 
-  const subscription = await getUserSubscriptionForPlan(user.authId, plan.id);
-  const country = countryParam ?? user.profile.country;
+  const country = countryParam ?? user?.profile.country ?? "Nigeria";
   const duration = (durationParam === "7" ? 7 : 30) as 7 | 30;
 
   const prices = await getPlanPrices(plan.id);
   const price = resolvePrice(prices, country, duration);
   if (!price) redirect("/subscriptions");
 
-  const amount = transactionType === "activation" ? price.activation_fee ?? price.price : price.price;
+  const amount = price.price;
   const paymentMethods = await getPaymentMethodsForCountry(country);
+  const config = await getSiteConfig();
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
@@ -48,10 +44,8 @@ export default async function CheckoutPage({
         price={price}
         amount={amount}
         paymentMethods={paymentMethods}
-        transactionType={transactionType}
-        userId={user.authId}
         duration={duration}
-        existingSubscriptionId={subscription?.id}
+        supportLink={config.support_link}
       />
     </div>
   );

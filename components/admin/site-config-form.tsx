@@ -14,6 +14,7 @@ export function SiteConfigForm({ config }: { config: SiteConfig }) {
   const [telegram, setTelegram] = useState(config.telegram_url);
   const [whatsapp, setWhatsapp] = useState(config.whatsapp_number);
   const [contactEmail, setContactEmail] = useState(config.contact_email);
+  const [supportLink, setSupportLink] = useState(config.support_link);
   const [social, setSocial] = useState(config.social_links);
   const [submitting, setSubmitting] = useState(false);
 
@@ -25,6 +26,7 @@ export function SiteConfigForm({ config }: { config: SiteConfig }) {
         updateSiteConfig("telegram_url", telegram),
         updateSiteConfig("whatsapp_number", whatsapp),
         updateSiteConfig("contact_email", contactEmail),
+        updateSiteConfig("support_link", supportLink),
         updateSiteConfig("social_links", social),
       ]);
       toast.success("Site config saved");
@@ -72,6 +74,17 @@ export function SiteConfigForm({ config }: { config: SiteConfig }) {
         <div className="space-y-2">
           <Label>Contact Email</Label>
           <Input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <Label>Support Link (WhatsApp / Telegram)</Label>
+          <Input
+            placeholder="https://wa.me/... or https://t.me/..."
+            value={supportLink}
+            onChange={(e) => setSupportLink(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Shown as a button after guests submit payment proof, so they can contact you for their access code.
+          </p>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">

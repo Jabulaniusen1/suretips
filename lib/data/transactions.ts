@@ -2,20 +2,28 @@ import { createClient } from "@/lib/supabase/server";
 
 export interface TransactionRow {
   id: string;
-  user_id: string;
+  user_id: string | null;
   plan_id: string;
   amount: number;
   currency: string;
   payment_method_name: string | null;
   payment_type: "subscription" | "activation";
   status: "pending" | "completed" | "failed" | "refunded";
-  metadata: { payment_proof_url?: string; duration_days?: 7 | 30; rejection_reason?: string };
+  metadata: {
+    payment_proof_url?: string;
+    duration_days?: 7 | 30;
+    rejection_reason?: string;
+    contact_name?: string;
+    contact_email?: string;
+    contact_phone?: string;
+  };
   created_at: string;
   users: { full_name: string | null; email: string } | null;
   plans: { name: string; slug: string } | null;
+  access_codes: { code: string; expires_at: string } | null;
 }
 
-const SELECT = "*, users(full_name, email), plans(name, slug)";
+const SELECT = "*, users(full_name, email), plans(name, slug), access_codes(code, expires_at)";
 
 export async function getPendingSubscriptionTransactions(): Promise<TransactionRow[]> {
   const supabase = await createClient();
