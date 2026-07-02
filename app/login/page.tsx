@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Log In" };
 
 export default function LoginPage() {
   return (
-    <AuthShell title="Welcome back" description="Log in to access your predictions and VIP plans.">
+    <AuthShell title="Welcome back" description="Log in to access your protected dashboard.">
       <Suspense>
         <LoginForm />
       </Suspense>

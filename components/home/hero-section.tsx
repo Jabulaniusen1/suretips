@@ -35,7 +35,7 @@ export async function HeroSection() {
           <h1 className="mt-4 max-w-2xl text-4xl font-extrabold tracking-tight sm:text-5xl">{config.hero.headline}</h1>
           <p className="mt-4 max-w-xl text-lg text-zinc-300">{config.hero.subtext}</p>
           <div className="mt-8 flex flex-wrap gap-4">
-            <Button size="lg" render={<Link href="/subscriptions" />}>
+            <Button size="lg" render={<Link href="/pricing" />}>
               {config.hero.primary_cta_label}
             </Button>
             <Button

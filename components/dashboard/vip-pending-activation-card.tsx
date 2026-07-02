@@ -12,7 +12,7 @@ export function VipPendingActivationCard({ planSlug }: { planSlug: string }) {
       <p className="mt-2 text-sm text-amber-800 dark:text-amber-200">
         You&apos;ve subscribed but need to pay the Activation Fee to unlock 100% accurate predictions.
       </p>
-      <Button className="mt-4" render={<Link href={`/checkout?plan=${planSlug}&type=activation`} />}>
+      <Button className="mt-4" render={<Link href={`/pricing?plan=${planSlug}`} />}>
         Pay Activation Fee
       </Button>
     </div>

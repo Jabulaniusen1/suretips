@@ -16,9 +16,7 @@ const STATIC_ROUTES = [
   "/blog",
   "/competitions",
   "/previous-results",
-  "/subscriptions",
-  "/login",
-  "/signup",
+  "/pricing",
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

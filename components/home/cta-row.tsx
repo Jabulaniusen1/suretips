@@ -8,7 +8,7 @@ export async function CtaRow() {
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-border bg-card p-6 sm:flex-row">
-        <Button size="lg" className="w-full sm:w-auto" render={<Link href="/subscriptions" />}>
+        <Button size="lg" className="w-full sm:w-auto" render={<Link href="/pricing" />}>
           Subscribe to VIP
         </Button>
         <Button

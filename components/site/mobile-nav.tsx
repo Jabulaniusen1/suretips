@@ -65,14 +65,9 @@ export function MobileNav({ isLoggedIn, adLinks = [] }: { isLoggedIn: boolean; a
               Dashboard
             </Button>
           ) : (
-            <>
-              <Button variant="outline" onClick={() => setOpen(false)} render={<Link href="/login" />}>
-                Login
-              </Button>
-              <Button onClick={() => setOpen(false)} render={<Link href="/signup" />}>
-                Subscribe to VIP
-              </Button>
-            </>
+            <Button onClick={() => setOpen(false)} render={<Link href="/pricing" />}>
+              View Pricing
+            </Button>
           )}
         </div>
       </SheetContent>

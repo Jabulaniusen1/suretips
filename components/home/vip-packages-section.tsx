@@ -22,7 +22,7 @@ export async function VipPackagesSection() {
           return (
             <Link
               key={plan.id}
-              href={`/subscriptions?plan=${plan.slug}`}
+              href={`/pricing?plan=${plan.slug}`}
               className="group flex flex-col rounded-2xl border border-border bg-card p-6 transition-shadow hover:shadow-lg"
             >
               <div className="flex size-12 items-center justify-center rounded-full bg-accent text-brand">

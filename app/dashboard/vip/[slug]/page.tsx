@@ -76,7 +76,7 @@ export default async function VipZonePage({
         <div className="mt-8 flex flex-col items-center justify-between gap-4 rounded-2xl bg-ink p-6 text-center text-ink-foreground sm:flex-row sm:text-left">
           <p className="font-medium">Join VIP now and unlock expert picks, combos and exclusive insights!</p>
           <a
-            href={`/checkout?plan=${slug}`}
+            href={`/pricing?plan=${slug}`}
             className="inline-flex shrink-0 items-center justify-center rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground"
           >
             Upgrade Now

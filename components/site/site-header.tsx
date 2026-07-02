@@ -52,12 +52,7 @@ export async function SiteHeader() {
           {isLoggedIn ? (
             <Button render={<Link href="/dashboard" />}>Dashboard</Button>
           ) : (
-            <>
-              <Button variant="ghost" render={<Link href="/login" />}>
-                Login
-              </Button>
-              <Button render={<Link href="/signup" />}>Subscribe to VIP</Button>
-            </>
+            <Button render={<Link href="/pricing" />}>View Pricing</Button>
           )}
         </div>
         <MobileNav isLoggedIn={isLoggedIn} adLinks={adLinks} />

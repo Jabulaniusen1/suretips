@@ -1,22 +1,35 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Crown, KeyRound, Target } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronLeft,
+  CreditCard,
+  Crown,
+  Mail,
+  MapPin,
+  Phone,
+  Target,
+  User,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { COUNTRIES } from "@/lib/constants";
 import { resolvePrice } from "@/lib/utils/resolve-price";
 import { formatPrice, getCurrencyFromCountry } from "@/lib/utils/currency";
-import { activateAccessCode } from "@/lib/actions/access-codes";
 import type { Tables } from "@/types/database";
 
 const ICONS: Record<string, typeof Crown> = { "correct-scores": Target };
+const FLOW_STEPS = [2, 3, 4] as const;
+
+type FlowStep = (typeof FLOW_STEPS)[number];
 
 export function SubscriptionsClient({
   plans,
@@ -30,57 +43,110 @@ export function SubscriptionsClient({
   highlightSlug?: string;
 }) {
   const router = useRouter();
-  const [country, setCountry] = useState(defaultCountry);
   const [duration, setDuration] = useState<"7" | "30">("30");
   const [selectedPlan, setSelectedPlan] = useState<Tables<"plans"> | null>(null);
-  const [code, setCode] = useState("");
-  const [isPending, startTransition] = useTransition();
+  const [step, setStep] = useState<FlowStep>(2);
+  const [selectedCountry, setSelectedCountry] = useState(defaultCountry);
+  const [hasSelectedCountry, setHasSelectedCountry] = useState(false);
+  const [contactName, setContactName] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
 
-  const currency = useMemo(() => getCurrencyFromCountry(country), [country]);
+  const selectedCurrency = useMemo(() => getCurrencyFromCountry(selectedCountry), [selectedCountry]);
 
-  function handlePlanClick(plan: Tables<"plans">) {
-    setSelectedPlan(plan);
-    setCode("");
+  const openPlan = useCallback(
+    (plan: Tables<"plans">) => {
+      if (!hasSelectedCountry) {
+        toast.error("Select your country to see pricing first");
+        return;
+      }
+      setSelectedPlan(plan);
+      setStep(2);
+      setContactName("");
+      setContactPhone("");
+      setContactEmail("");
+      setDuration("30");
+    },
+    [hasSelectedCountry],
+  );
+
+  const durationDays = Number(duration) as 7 | 30;
+  const selectedPrice = selectedPlan
+    ? resolvePrice(prices[selectedPlan.id] ?? [], selectedCountry, durationDays)
+    : null;
+
+  function handleBack() {
+    if (step === 2) {
+      setSelectedPlan(null);
+      return;
+    }
+
+    setStep((current) => (current - 1) as FlowStep);
   }
 
-  function handleActivate() {
-    if (!code.trim()) return toast.error("Enter your access code");
-    startTransition(async () => {
-      try {
-        const { planSlug } = await activateAccessCode(code.trim());
-        toast.success("Access code activated!");
-        router.push(`/plans/${planSlug}`);
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Invalid access code");
-      }
+  function handleNext() {
+    if (step === 2) {
+      if (!contactName.trim()) return toast.error("Enter your name");
+      setStep(3);
+      return;
+    }
+
+    if (step === 3) {
+      if (!contactPhone.trim()) return toast.error("Enter your phone number");
+      setStep(4);
+      return;
+    }
+
+    if (!selectedPlan) return;
+    if (!selectedCountry) return toast.error("Select your country");
+    if (!/^\S+@\S+\.\S+$/.test(contactEmail.trim())) return toast.error("Enter a valid email address");
+    if (!selectedPrice) return toast.error("No pricing available for your country yet");
+
+    const params = new URLSearchParams({
+      plan: selectedPlan.slug,
+      duration,
+      country: selectedCountry,
+      name: contactName.trim(),
+      phone: contactPhone.trim(),
+      email: contactEmail.trim(),
     });
+
+    setSelectedPlan(null);
+    router.push(`/checkout?${params.toString()}`);
   }
 
   return (
     <div>
-      <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-muted-foreground">Country</span>
-          <SearchableSelect
-            value={country}
-            onChange={setCountry}
-            options={COUNTRIES}
-            searchPlaceholder="Search countries…"
-            className="w-44"
-          />
+      <div className="mx-auto flex max-w-xl flex-col items-center gap-3 rounded-xl border border-border bg-card p-4 text-center sm:flex-row sm:text-left">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-brand">
+          <MapPin className="size-5" />
         </div>
-        <Tabs value={duration} onValueChange={(v) => setDuration(v as "7" | "30")}>
-          <TabsList>
-            <TabsTrigger value="7">1 Week</TabsTrigger>
-            <TabsTrigger value="30">1 Month</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="min-w-0 flex-1">
+          <Label className="justify-center sm:justify-start">Select your country first</Label>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {hasSelectedCountry
+              ? `Prices are shown for ${selectedCountry} (${selectedCurrency}).`
+              : "Select your country to reveal package pricing."}
+          </p>
+        </div>
+        <SearchableSelect
+          value={hasSelectedCountry ? selectedCountry : ""}
+          onChange={(value) => {
+            setSelectedCountry(value);
+            setHasSelectedCountry(true);
+          }}
+          options={COUNTRIES}
+          searchPlaceholder="Search countries..."
+          className="w-full sm:w-48"
+        />
       </div>
 
       <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {plans.map((plan) => {
           const Icon = ICONS[plan.slug] ?? Crown;
-          const price = resolvePrice(prices[plan.id] ?? [], country, Number(duration) as 7 | 30);
+          const previewPrice =
+            resolvePrice(prices[plan.id] ?? [], selectedCountry, 30) ??
+            resolvePrice(prices[plan.id] ?? [], selectedCountry, 7);
           const highlighted = plan.slug === highlightSlug;
 
           return (
@@ -104,116 +170,155 @@ export function SubscriptionsClient({
                 </Badge>
               )}
               <div className="mt-4">
-                {price ? (
+                {!hasSelectedCountry ? (
+                  <p className="text-sm text-muted-foreground">Select your country to see pricing</p>
+                ) : previewPrice ? (
                   <p className="text-2xl font-extrabold">
-                    {formatPrice(price.price, price.currency)}
+                    {formatPrice(previewPrice.price, previewPrice.currency)}
                     <span className="text-sm font-normal text-muted-foreground">
-                      {" "}/ {duration === "7" ? "week" : "month"}
+                      {" "}/ {previewPrice.duration_days === 7 ? "week" : "month"}
                     </span>
                   </p>
                 ) : (
                   <p className="text-sm text-muted-foreground">Pricing coming soon</p>
                 )}
               </div>
-              <Button
-                className="mt-4"
-                onClick={() => handlePlanClick(plan)}
-              >
-                Get Access
+              <Button className="mt-4" onClick={() => openPlan(plan)}>
+                Select Package
+                <ArrowRight className="size-4" />
               </Button>
             </div>
           );
         })}
       </div>
 
-      <p className="mt-4 text-center text-xs text-muted-foreground">
-        Prices shown in {currency}. You can change your country above.
-      </p>
-
       <Dialog open={!!selectedPlan} onOpenChange={(open) => !open && setSelectedPlan(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
+            <p className="text-xs font-semibold uppercase text-brand">Step {step}</p>
             <DialogTitle>{selectedPlan?.name}</DialogTitle>
+            <DialogDescription>
+              {step === 2 && "Enter the name we should attach to your payment."}
+              {step === 3 && "Add the phone or WhatsApp number support can reach."}
+              {step === 4 && "Enter your email and confirm the package length."}
+            </DialogDescription>
           </DialogHeader>
 
-          <Tabs defaultValue="code" className="mt-2">
-            <TabsList className="w-full">
-              <TabsTrigger value="code" className="flex-1">
-                <KeyRound className="mr-2 size-4" />
-                Enter Access Code
-              </TabsTrigger>
-              <TabsTrigger value="subscribe" className="flex-1">
-                Subscribe
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="code" className="mt-4 space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Already have a 5-digit access code? Enter it below to unlock this plan instantly.
-              </p>
-              <Input
-                placeholder="Enter your 5-digit code"
-                maxLength={5}
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                className="font-mono text-center text-lg tracking-[0.5em]"
+          <div className="grid grid-cols-3 gap-2" aria-hidden>
+            {FLOW_STEPS.map((flowStep) => (
+              <div
+                key={flowStep}
+                className={`h-1.5 rounded-full ${flowStep <= step ? "bg-brand" : "bg-muted"}`}
               />
-              <Button
-                className="w-full"
-                onClick={handleActivate}
-                disabled={isPending || code.length !== 5}
-              >
-                {isPending ? "Activating…" : "Activate Access"}
-              </Button>
-            </TabsContent>
+            ))}
+          </div>
 
-            <TabsContent value="subscribe" className="mt-4 space-y-4">
-              {selectedPlan && (() => {
-                const price = resolvePrice(prices[selectedPlan.id] ?? [], country, Number(duration) as 7 | 30);
-                return (
-                  <>
-                    <div className="rounded-xl border border-border bg-secondary p-4 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Plan</span>
-                        <span className="font-medium">{selectedPlan.name}</span>
-                      </div>
-                      <div className="mt-2 flex items-center justify-between">
-                        <span className="text-muted-foreground">Duration</span>
-                        <span className="font-medium">{duration === "7" ? "1 Week" : "1 Month"}</span>
-                      </div>
-                      <div className="mt-2 flex items-center justify-between">
-                        <span className="text-muted-foreground">Country</span>
-                        <span className="font-medium">{country}</span>
-                      </div>
-                      {price && (
-                        <div className="mt-2 flex items-center justify-between border-t border-border pt-2">
-                          <span className="font-medium">Total</span>
-                          <span className="text-lg font-bold">{formatPrice(price.price, price.currency)}</span>
-                        </div>
-                      )}
-                    </div>
-                    {price ? (
-                      <Button
-                        className="w-full"
-                        onClick={() => {
-                          setSelectedPlan(null);
-                          router.push(
-                            `/checkout?plan=${selectedPlan.slug}&duration=${duration}&country=${encodeURIComponent(country)}`
-                          );
-                        }}
-                      >
-                        Proceed to Checkout
-                      </Button>
-                    ) : (
-                      <p className="text-center text-sm text-muted-foreground">
-                        No pricing available for your country yet.
-                      </p>
-                    )}
-                  </>
-                );
-              })()}
-            </TabsContent>
-          </Tabs>
+          {step === 2 && (
+            <div className="space-y-3 py-2">
+              <div className="flex size-11 items-center justify-center rounded-full bg-accent text-brand">
+                <User className="size-5" />
+              </div>
+              <div className="space-y-2">
+                <Label>Your name</Label>
+                <Input
+                  autoFocus
+                  placeholder="Your name"
+                  value={contactName}
+                  onChange={(event) => setContactName(event.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-3 py-2">
+              <div className="flex size-11 items-center justify-center rounded-full bg-accent text-brand">
+                <Phone className="size-5" />
+              </div>
+              <div className="space-y-2">
+                <Label>Your phone number</Label>
+                <Input
+                  autoFocus
+                  placeholder="+234..."
+                  value={contactPhone}
+                  onChange={(event) => setContactPhone(event.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <Mail className="size-3.5" />
+                  Your email
+                </Label>
+                <Input
+                  autoFocus
+                  type="email"
+                  placeholder="your@email.com"
+                  value={contactEmail}
+                  onChange={(event) => setContactEmail(event.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Package length</Label>
+                <Tabs value={duration} onValueChange={(value) => setDuration(value as "7" | "30")}>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="7">1 Week</TabsTrigger>
+                    <TabsTrigger value="30">1 Month</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+
+              <div className="rounded-xl border border-border bg-secondary p-4 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-muted-foreground">Package</span>
+                  <span className="text-right font-medium">{selectedPlan?.name}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <span className="text-muted-foreground">Country</span>
+                  <span className="text-right font-medium">{selectedCountry}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <span className="text-muted-foreground">Duration</span>
+                  <span className="font-medium">{duration === "7" ? "1 Week" : "1 Month"}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-3 border-t border-border pt-2">
+                  <span className="font-medium">Total</span>
+                  <span className="text-lg font-bold">
+                    {selectedPrice ? formatPrice(selectedPrice.price, selectedPrice.currency) : "Unavailable"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+            <Button variant="outline" onClick={handleBack}>
+              {step === 2 ? "Cancel" : (
+                <>
+                  <ChevronLeft className="size-4" />
+                  Back
+                </>
+              )}
+            </Button>
+            <Button onClick={handleNext}>
+              {step === 4 ? (
+                <>
+                  <CreditCard className="size-4" />
+                  Payment Details
+                </>
+              ) : (
+                <>
+                  Next
+                  <ArrowRight className="size-4" />
+                </>
+              )}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

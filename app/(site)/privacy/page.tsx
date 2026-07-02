@@ -9,8 +9,8 @@ export default function PrivacyPage() {
       <p>This Privacy Policy explains how Sureodds Predict collects, uses, and protects your information.</p>
       <h2>Information We Collect</h2>
       <p>
-        Account details (name, email, country), payment proof images you upload at checkout, and usage data
-        such as predictions you view.
+        Contact details (name, email, phone, country), payment proof images you upload at checkout, and usage
+        data such as predictions you view.
       </p>
       <h2>How We Use Your Information</h2>
       <p>
@@ -22,7 +22,7 @@ export default function PrivacyPage() {
       <h2>Third Parties</h2>
       <p>We use API-Sports for football data and SMTP providers for email delivery. We do not sell your personal data.</p>
       <h2>Your Rights</h2>
-      <p>You can update or delete your account information at any time from Account Settings, or by contacting support.</p>
+      <p>You can ask us to update or delete your contact information at any time by contacting support.</p>
       <p className="text-sm text-muted-foreground">This is template content — have it reviewed by a lawyer before launch.</p>
     </LegalPage>
   );

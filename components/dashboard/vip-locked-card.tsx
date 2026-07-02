@@ -17,7 +17,7 @@ export function VipLockedCard({ planSlug }: { planSlug: string }) {
         <p className="mt-2 max-w-xs text-sm text-zinc-300">
           Upgrade to a VIP package to access premium picks and exclusive analysis.
         </p>
-        <Button className="mt-5" render={<Link href={`/checkout?plan=${planSlug}`} />}>
+        <Button className="mt-5" render={<Link href={`/pricing?plan=${planSlug}`} />}>
           Unlock VIP Access
         </Button>
       </div>

@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -61,12 +60,6 @@ export function LoginForm() {
       <Button type="submit" className="w-full" disabled={submitting}>
         {submitting ? "Logging in…" : "Log In"}
       </Button>
-      <p className="text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{" "}
-        <Link href="/signup" className="font-medium text-brand hover:underline">
-          Sign up
-        </Link>
-      </p>
     </form>
   );
 }

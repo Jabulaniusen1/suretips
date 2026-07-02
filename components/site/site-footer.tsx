@@ -84,7 +84,7 @@ export async function SiteFooter() {
           <ul className="mt-4 space-y-2 text-sm text-zinc-400">
             {vipPlans.map((plan) => (
               <li key={plan.id}>
-                <Link href={`/subscriptions?plan=${plan.slug}`} className="hover:text-brand">
+                <Link href={`/pricing?plan=${plan.slug}`} className="hover:text-brand">
                   {plan.name}
                 </Link>
               </li>

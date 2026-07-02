@@ -86,7 +86,7 @@ export function AccessCodeGate({ plan }: { plan: Tables<"plans"> }) {
         <Button
           variant="outline"
           className="mt-4 w-full"
-          onClick={() => router.push(`/subscriptions?plan=${plan.slug}`)}
+          onClick={() => router.push(`/pricing?plan=${plan.slug}`)}
         >
           <ShoppingCart className="mr-2 size-4" />
           View Plans & Subscribe

@@ -11,6 +11,7 @@ export async function submitCheckout(formData: FormData) {
   const amount = Number(formData.get("amount"));
   const currency = formData.get("currency") as string;
   const duration = Number(formData.get("duration")) as 7 | 30;
+  const country = (formData.get("country") as string) || undefined;
   const methodId = formData.get("methodId") as string;
   const methodName = formData.get("methodName") as string;
   const contactName = (formData.get("contactName") as string) || undefined;
@@ -52,6 +53,7 @@ export async function submitCheckout(formData: FormData) {
     metadata: {
       payment_proof_url: path,
       duration_days: duration,
+      country,
       payment_method_id: methodId,
       contact_name: contactName,
       contact_email: contactEmail,

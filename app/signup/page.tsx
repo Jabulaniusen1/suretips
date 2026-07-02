@@ -1,13 +1,8 @@
 import type { Metadata } from "next";
-import { AuthShell } from "@/components/auth/auth-shell";
-import { SignupForm } from "@/components/auth/signup-form";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: "Sign Up" };
 
 export default function SignupPage() {
-  return (
-    <AuthShell title="Create your account" description="Sign up to subscribe to VIP predictions.">
-      <SignupForm />
-    </AuthShell>
-  );
+  redirect("/pricing");
 }

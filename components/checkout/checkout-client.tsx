@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Check, CheckCircle, Copy, ExternalLink, MessageCircle } from "lucide-react";
+import { Check, CheckCircle, Copy, ExternalLink, Mail, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,8 @@ export function CheckoutClient({
   amount,
   paymentMethods,
   duration,
+  country,
+  initialContact,
   supportLink,
 }: {
   plan: Tables<"plans">;
@@ -25,13 +27,19 @@ export function CheckoutClient({
   amount: number;
   paymentMethods: Tables<"payment_methods">[];
   duration: 7 | 30;
+  country: string;
+  initialContact?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
   supportLink: string;
 }) {
   const [methodId, setMethodId] = useState<string | undefined>(paymentMethods[0]?.id);
   const [file, setFile] = useState<File | null>(null);
-  const [contactName, setContactName] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
-  const [contactPhone, setContactPhone] = useState("");
+  const [contactName, setContactName] = useState(initialContact?.name ?? "");
+  const [contactEmail, setContactEmail] = useState(initialContact?.email ?? "");
+  const [contactPhone, setContactPhone] = useState(initialContact?.phone ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -54,6 +62,7 @@ export function CheckoutClient({
       formData.append("amount", String(amount));
       formData.append("currency", price.currency);
       formData.append("duration", String(duration));
+      formData.append("country", country);
       formData.append("methodId", selectedMethod.id);
       formData.append("methodName", selectedMethod.name);
       if (contactName) formData.append("contactName", contactName);
@@ -87,8 +96,12 @@ export function CheckoutClient({
             size="lg"
             render={<a href={supportLink} target="_blank" rel="noopener noreferrer" />}
           >
-            <MessageCircle className="mr-2 size-4" />
-            Message Support
+            {supportLink.startsWith("mailto:") ? (
+              <Mail className="mr-2 size-4" />
+            ) : (
+              <MessageCircle className="mr-2 size-4" />
+            )}
+            Contact Support
             <ExternalLink className="ml-2 size-3.5" />
           </Button>
         ) : (

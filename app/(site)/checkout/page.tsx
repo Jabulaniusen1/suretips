@@ -12,10 +12,24 @@ export const metadata: Metadata = { title: "Checkout" };
 export default async function CheckoutPage({
   searchParams,
 }: {
-  searchParams: Promise<{ plan?: string; duration?: string; country?: string }>;
+  searchParams: Promise<{
+    plan?: string;
+    duration?: string;
+    country?: string;
+    name?: string;
+    email?: string;
+    phone?: string;
+  }>;
 }) {
-  const { plan: planSlug, duration: durationParam, country: countryParam } = await searchParams;
-  if (!planSlug) redirect("/subscriptions");
+  const {
+    plan: planSlug,
+    duration: durationParam,
+    country: countryParam,
+    name: nameParam,
+    email: emailParam,
+    phone: phoneParam,
+  } = await searchParams;
+  if (!planSlug) redirect("/pricing");
 
   const plan = await getPlanBySlug(planSlug);
   if (!plan) notFound();
@@ -27,11 +41,15 @@ export default async function CheckoutPage({
 
   const prices = await getPlanPrices(plan.id);
   const price = resolvePrice(prices, country, duration);
-  if (!price) redirect("/subscriptions");
+  if (!price) redirect("/pricing");
 
   const amount = price.price;
   const paymentMethods = await getPaymentMethodsForCountry(country);
   const config = await getSiteConfig();
+  const supportLink =
+    config.support_link ||
+    (config.whatsapp_number ? `https://wa.me/${config.whatsapp_number.replace(/\D/g, "")}` : "") ||
+    (config.contact_email ? `mailto:${config.contact_email}` : "");
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
@@ -45,7 +63,13 @@ export default async function CheckoutPage({
         amount={amount}
         paymentMethods={paymentMethods}
         duration={duration}
-        supportLink={config.support_link}
+        country={country}
+        initialContact={{
+          name: nameParam ?? "",
+          email: emailParam ?? "",
+          phone: phoneParam ?? "",
+        }}
+        supportLink={supportLink}
       />
     </div>
   );

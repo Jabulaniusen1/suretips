@@ -35,7 +35,7 @@ export async function CorrectScorePreviewSection({ period, date }: { period: Dat
         <LockOverlay
           title="Premium Content Locked"
           message="Subscribe to Correct Scores to see today's exact scoreline predictions."
-          ctaHref={`/subscriptions?plan=${plan.slug}`}
+          ctaHref={`/pricing?plan=${plan.slug}`}
         />
       </div>
     </section>
