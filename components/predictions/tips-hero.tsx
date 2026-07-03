@@ -1,7 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
-import { FREE_PREDICTIONS_FILTERS } from "@/lib/utils/prediction-filter";
-import { cn } from "@/lib/utils";
+import { FilterTabs } from "@/components/predictions/filter-tabs";
 
 export function TipsHero({
   title,
@@ -21,7 +19,7 @@ export function TipsHero({
         className="absolute inset-0 opacity-15"
         style={{
           backgroundImage:
-            "radial-gradient(circle at 15% 50%, var(--brand-orange) 0%, transparent 40%)",
+            "radial-gradient(circle at 15% 50%, var(--brand-red) 0%, transparent 40%)",
         }}
       />
 
@@ -30,24 +28,8 @@ export function TipsHero({
         <h1 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-tight sm:text-4xl">{title}</h1>
         <p className="mt-3 max-w-xl text-base text-zinc-300">{subtitle}</p>
 
-        {/* Filter tabs */}
-        <div className="-mx-4 mt-8 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          <div className="flex gap-2 pb-1">
-            {FREE_PREDICTIONS_FILTERS.map((f) => (
-              <Link
-                key={f.id}
-                href={`/tips/${f.id}`}
-                className={cn(
-                  "shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
-                  activeFilter === f.id
-                    ? "border-brand bg-brand text-brand-foreground"
-                    : "border-white/20 text-zinc-300 hover:border-brand/60 hover:text-white"
-                )}
-              >
-                {f.label}
-              </Link>
-            ))}
-          </div>
+        <div className="mt-8">
+          <FilterTabs active={activeFilter} variant="dark" />
         </div>
       </div>
     </section>

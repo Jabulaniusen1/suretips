@@ -10,7 +10,7 @@ const FAQS = [
   },
   {
     q: "How do I pay for a VIP package?",
-    a: "Choose a package and duration on the Subscriptions page, then follow the checkout flow to submit proof of payment via bank transfer, mobile money, or crypto. Our team confirms payments manually, usually within a few hours.",
+    a: "Choose a package and duration on the Pricing page, then follow the checkout flow to submit proof of payment via bank transfer, mobile money, or crypto. Our team confirms payments manually, usually within a few hours.",
   },
   {
     q: "What is the Correct Scores activation fee?",

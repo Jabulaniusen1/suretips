@@ -43,7 +43,7 @@ export function AdminSidebar({ badges }: { badges: { transactions: number; chat:
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
       <div className="flex h-16 items-center px-5 text-lg font-bold">
-        Sureodds <span className="text-brand">Admin</span>
+        Kingpredicts <span className="text-brand">Admin</span>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto px-3">
         {NAV.map((item) => {

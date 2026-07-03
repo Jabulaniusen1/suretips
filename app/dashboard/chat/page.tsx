@@ -14,7 +14,7 @@ export default async function DashboardChatPage() {
   return (
     <div>
       <h1 className="text-xl font-bold">Contact Admin</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Get support directly from the Sureodds Predict team.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Get support directly from the Kingpredicts team.</p>
       <div className="mt-4">
         <ChatThread conversationUserId={user.authId} currentUserId={user.authId} initialMessages={messages} />
       </div>

@@ -10,7 +10,7 @@ export async function BlogSection() {
   return (
     <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <h2 className="text-2xl font-bold">From the Blog</h2>
+        <h2 className="text-2xl font-bold">Insights &amp; Analysis</h2>
         <Link href="/blog" className="text-sm font-medium text-brand hover:underline">
           View all posts
         </Link>

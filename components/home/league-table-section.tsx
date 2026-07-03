@@ -20,8 +20,8 @@ export async function LeagueTableSection() {
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <h2 className="text-2xl font-bold">League Tables</h2>
-      <p className="mt-1 text-sm text-muted-foreground">Live standings for Europe&apos;s top leagues.</p>
+      <h2 className="text-2xl font-bold">Know the Table</h2>
+      <p className="mt-1 text-sm text-muted-foreground">Live standings from Europe&apos;s top five leagues, updated as results come in.</p>
       <div className="mt-6">
         <LeagueStandingsTabs leagues={leagues} />
       </div>

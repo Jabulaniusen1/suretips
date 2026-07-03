@@ -13,7 +13,7 @@ export function ConfidenceRing({ value }: { value: number | null }) {
           cy="20"
           r={radius}
           fill="none"
-          stroke="var(--brand-orange)"
+          stroke="var(--brand-red)"
           strokeWidth="4"
           strokeDasharray={circumference}
           strokeDashoffset={offset}

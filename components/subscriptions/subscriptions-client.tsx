@@ -23,7 +23,8 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { COUNTRIES } from "@/lib/constants";
 import { resolvePrice } from "@/lib/utils/resolve-price";
-import { formatPrice, getCurrencyFromCountry } from "@/lib/utils/currency";
+import { getCurrencyFromCountry } from "@/lib/utils/currency";
+import { PriceTag } from "@/components/site/price-tag";
 import type { Tables } from "@/types/database";
 
 const ICONS: Record<string, typeof Crown> = { "correct-scores": Target };
@@ -36,11 +37,13 @@ export function SubscriptionsClient({
   prices,
   defaultCountry,
   highlightSlug,
+  isLoggedIn,
 }: {
   plans: Tables<"plans">[];
   prices: Record<string, Tables<"plan_prices">[]>;
   defaultCountry: string;
   highlightSlug?: string;
+  isLoggedIn: boolean;
 }) {
   const router = useRouter();
   const [duration, setDuration] = useState<"7" | "30">("30");
@@ -60,6 +63,10 @@ export function SubscriptionsClient({
         toast.error("Select your country to see pricing first");
         return;
       }
+      if (!isLoggedIn) {
+        router.push(`/signup?redirect=${encodeURIComponent(`/pricing?plan=${plan.slug}`)}`);
+        return;
+      }
       setSelectedPlan(plan);
       setStep(2);
       setContactName("");
@@ -67,7 +74,7 @@ export function SubscriptionsClient({
       setContactEmail("");
       setDuration("30");
     },
-    [hasSelectedCountry],
+    [hasSelectedCountry, isLoggedIn, router],
   );
 
   const durationDays = Number(duration) as 7 | 30;
@@ -173,10 +180,14 @@ export function SubscriptionsClient({
                 {!hasSelectedCountry ? (
                   <p className="text-sm text-muted-foreground">Select your country to see pricing</p>
                 ) : previewPrice ? (
-                  <p className="text-2xl font-extrabold">
-                    {formatPrice(previewPrice.price, previewPrice.currency)}
+                  <p className="flex flex-wrap items-baseline gap-1">
+                    <PriceTag
+                      price={previewPrice.price}
+                      compareAtPrice={previewPrice.compare_at_price}
+                      currency={previewPrice.currency}
+                    />
                     <span className="text-sm font-normal text-muted-foreground">
-                      {" "}/ {previewPrice.duration_days === 7 ? "week" : "month"}
+                      / {previewPrice.duration_days === 7 ? "week" : "month"}
                     </span>
                   </p>
                 ) : (
@@ -222,6 +233,7 @@ export function SubscriptionsClient({
                 <Label>Your name</Label>
                 <Input
                   autoFocus
+                  className="h-11 text-base"
                   placeholder="Your name"
                   value={contactName}
                   onChange={(event) => setContactName(event.target.value)}
@@ -239,6 +251,7 @@ export function SubscriptionsClient({
                 <Label>Your phone number</Label>
                 <Input
                   autoFocus
+                  className="h-11 text-base"
                   placeholder="+234..."
                   value={contactPhone}
                   onChange={(event) => setContactPhone(event.target.value)}
@@ -257,6 +270,7 @@ export function SubscriptionsClient({
                 <Input
                   autoFocus
                   type="email"
+                  className="h-11 text-base"
                   placeholder="your@email.com"
                   value={contactEmail}
                   onChange={(event) => setContactEmail(event.target.value)}
@@ -288,9 +302,16 @@ export function SubscriptionsClient({
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-3 border-t border-border pt-2">
                   <span className="font-medium">Total</span>
-                  <span className="text-lg font-bold">
-                    {selectedPrice ? formatPrice(selectedPrice.price, selectedPrice.currency) : "Unavailable"}
-                  </span>
+                  {selectedPrice ? (
+                    <PriceTag
+                      price={selectedPrice.price}
+                      compareAtPrice={selectedPrice.compare_at_price}
+                      currency={selectedPrice.currency}
+                      size="sm"
+                    />
+                  ) : (
+                    <span className="text-lg font-bold">Unavailable</span>
+                  )}
                 </div>
               </div>
             </div>

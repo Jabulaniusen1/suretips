@@ -12,11 +12,11 @@ export function Logo({
   dark?: boolean;
 }) {
   return (
-    <Link href="/" className={cn("flex items-center", className)} aria-label="Sureodds Predict">
-      {/* The logo file bakes in black wordmark text, so it needs a light
+    <Link href="/" className={cn("flex items-center", className)} aria-label="Kingpredicts">
+      {/* The logo file bakes in navy wordmark text, so it needs a light
           backing plate to stay legible on dark sections (e.g. the footer). */}
       <span className={cn("flex items-center rounded-md", dark && "bg-white px-2 py-1")}>
-        <Image src="/logo-mark.png" alt="Sureodds Predict" width={677} height={365} className={imgClassName} priority />
+        <Image src="/logo-mark.svg" alt="Kingpredicts" width={900} height={220} className={imgClassName} priority />
       </span>
     </Link>
   );

@@ -31,6 +31,7 @@ export default async function PricingPage({
           prices={prices}
           defaultCountry={user?.profile.country ?? "Nigeria"}
           highlightSlug={highlightSlug}
+          isLoggedIn={Boolean(user)}
         />
       </div>
     </div>

@@ -20,18 +20,16 @@ export async function submitCheckout(formData: FormData) {
 
   if (!planId || !amount || !currency || !methodId) throw new Error("Missing required fields.");
 
-  // Identify the user if logged in (for attaching to the transaction record only)
+  // Subscriptions must be tied to an account, so an authenticated session is required.
   const serverClient = await createClient();
   const { data: { user } } = await serverClient.auth.getUser();
-  const userId = user?.id ?? null;
+  if (!user) throw new Error("You must be logged in to subscribe.");
+  const userId = user.id;
 
-  // All storage and DB writes go through the service client so guests can
-  // upload without a Supabase auth session.
   const supabase = createServiceClient();
 
   const fileExt = file.name.split(".").pop() ?? "jpg";
-  const folder = userId ?? "guest";
-  const path = `${folder}/${crypto.randomUUID()}.${fileExt}`;
+  const path = `${userId}/${crypto.randomUUID()}.${fileExt}`;
 
   const bytes = await file.arrayBuffer();
   const { error: uploadError } = await supabase.storage
@@ -62,14 +60,11 @@ export async function submitCheckout(formData: FormData) {
   });
   if (txError) throw new Error(`Transaction error: ${txError.message}`);
 
-  // Notify logged-in users (guests have no inbox)
-  if (userId) {
-    const { data: plan } = await supabase.from("plans").select("name").eq("id", planId).single();
-    await supabase.from("notifications").insert({
-      user_id: userId,
-      type: "payment_submitted",
-      title: "Payment submitted",
-      message: `Your payment for ${plan?.name ?? "your plan"} is pending review. Message support to receive your access code once confirmed.`,
-    });
-  }
+  const { data: plan } = await supabase.from("plans").select("name").eq("id", planId).single();
+  await supabase.from("notifications").insert({
+    user_id: userId,
+    type: "payment_submitted",
+    title: "Payment submitted",
+    message: `Your payment for ${plan?.name ?? "your plan"} is pending review. Message support to receive your access code once confirmed.`,
+  });
 }

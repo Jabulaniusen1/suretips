@@ -11,9 +11,9 @@ export async function VipWinningsSection({ beforeDate }: { beforeDate?: string }
     <section id="vip-winnings" className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">VIP Previous Winnings</h2>
+          <h2 className="text-2xl font-bold">The Receipts</h2>
           <p className="text-sm text-muted-foreground">
-            Real results from every VIP package — see the proof before you subscribe.
+            Every VIP package, every result — see what we&apos;ve actually delivered before you subscribe.
           </p>
         </div>
         <Button variant="outline" size="sm" render={<Link href="/previous-results" />}>

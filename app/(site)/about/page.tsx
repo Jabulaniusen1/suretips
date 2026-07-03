@@ -5,9 +5,9 @@ export const metadata: Metadata = { title: "About Us" };
 
 export default function AboutPage() {
   return (
-    <LegalPage title="About Sureodds Predict">
+    <LegalPage title="About Kingpredicts">
       <p>
-        Sureodds Predict is a football prediction service built on one principle: show your work. We publish
+        Kingpredicts is a football prediction service built on one principle: show your work. We publish
         every prediction we make and every result that follows — wins and losses alike — so you can judge our
         accuracy for yourself before you ever subscribe.
       </p>

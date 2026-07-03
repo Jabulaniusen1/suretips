@@ -13,8 +13,8 @@ export async function VipPackagesSection() {
   return (
     <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="text-center">
-        <h2 className="text-2xl font-bold">VIP Packages</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Pick a package and unlock proven, daily football predictions.</p>
+        <h2 className="text-2xl font-bold">Find Your Edge</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Pick a package built around how you bet, and unlock daily predictions with a track record.</p>
       </div>
       <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {plans.map((plan) => {

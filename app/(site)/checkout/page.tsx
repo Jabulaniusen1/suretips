@@ -36,7 +36,18 @@ export default async function CheckoutPage({
 
   const user = await getCurrentUser();
 
-  const country = countryParam ?? user?.profile.country ?? "Nigeria";
+  if (!user) {
+    const params = new URLSearchParams();
+    params.set("plan", planSlug);
+    if (durationParam) params.set("duration", durationParam);
+    if (countryParam) params.set("country", countryParam);
+    if (nameParam) params.set("name", nameParam);
+    if (emailParam) params.set("email", emailParam);
+    if (phoneParam) params.set("phone", phoneParam);
+    redirect(`/login?redirect=${encodeURIComponent(`/checkout?${params.toString()}`)}`);
+  }
+
+  const country = countryParam ?? user.profile.country ?? "Nigeria";
   const duration = (durationParam === "7" ? 7 : 30) as 7 | 30;
 
   const prices = await getPlanPrices(plan.id);
@@ -65,8 +76,8 @@ export default async function CheckoutPage({
         duration={duration}
         country={country}
         initialContact={{
-          name: nameParam ?? "",
-          email: emailParam ?? "",
+          name: nameParam ?? user.profile.full_name ?? "",
+          email: emailParam ?? user.email ?? "",
           phone: phoneParam ?? "",
         }}
         supportLink={supportLink}

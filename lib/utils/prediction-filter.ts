@@ -13,7 +13,6 @@ const FILTER_KEYWORDS: Record<string, string[]> = {
 };
 
 export const FREE_PREDICTIONS_FILTERS = [
-  { id: "free", label: "Free Tips" },
   { id: "all", label: "All Tips" },
   { id: "super_single", label: "Super Single" },
   { id: "double_chance", label: "Double Chance" },
@@ -29,11 +28,6 @@ export type FilterId = (typeof FREE_PREDICTIONS_FILTERS)[number]["id"];
 export const FILTER_IDS = new Set<string>(FREE_PREDICTIONS_FILTERS.map((f) => f.id));
 
 export const FILTER_PAGE_META: Record<FilterId, { title: string; subtitle: string; description: string }> = {
-  free: {
-    title: "Free Football Tips",
-    subtitle: "Expert picks, updated daily — completely free.",
-    description: "Hand-picked predictions across top leagues. No subscription needed.",
-  },
   all: {
     title: "All Predictions Today",
     subtitle: "The full daily prediction feed across every market.",

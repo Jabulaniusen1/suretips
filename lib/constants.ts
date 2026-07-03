@@ -15,9 +15,9 @@ export const VIP_PLAN_SLUGS = [
 export const LOCKED_PREVIEW_ROW_LIMIT = 3;
 
 export const TRUST_BADGES = [
-  { title: "100% Secure", description: "Your data is safe with us." },
-  { title: "Premium Picks", description: "High accuracy exclusive picks." },
-  { title: "Better Success", description: "Boost your chances of winning." },
+  { title: "Verified Picks", description: "Every result logged and checked." },
+  { title: "High Confidence", description: "Hand-picked, data-backed scorelines." },
+  { title: "Real Track Record", description: "See our history before you subscribe." },
 ] as const;
 
 import { ALL_COUNTRIES } from "@/lib/data/world-countries";

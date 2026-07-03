@@ -24,13 +24,19 @@ export default async function HomePage({
   return (
     <>
       <HeroSection />
-      <FreePredictionsSection period={freePredictionsPeriod} filter={params.filter ?? "free"} date={freePredictionsDate} />
+      <FreePredictionsSection period={freePredictionsPeriod} filter={params.filter ?? "all"} date={freePredictionsDate} />
       <CtaRow />
-      <VipWinningsSection beforeDate={params.winningsBefore} />
+      <div className="bg-secondary/40">
+        <VipWinningsSection beforeDate={params.winningsBefore} />
+      </div>
       <VipPackagesSection />
-      <CorrectScorePreviewSection period={correctScorePeriod} date={correctScoreDate} />
+      <div className="bg-secondary/40">
+        <CorrectScorePreviewSection period={correctScorePeriod} date={correctScoreDate} />
+      </div>
       <BlogSection />
-      <LeagueTableSection />
+      <div className="bg-secondary/40">
+        <LeagueTableSection />
+      </div>
       <AboutSection />
     </>
   );

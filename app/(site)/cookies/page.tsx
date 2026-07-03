@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Cookie Policy" };
 export default function CookiesPage() {
   return (
     <LegalPage title="Cookie Policy">
-      <p>Sureodds Predict uses cookies to keep you signed in and to understand how the site is used.</p>
+      <p>Kingpredicts uses cookies to keep you signed in and to understand how the site is used.</p>
       <h2>Essential Cookies</h2>
       <p>Required for authentication (Supabase session cookies) and basic site functionality. These cannot be disabled.</p>
       <h2>Analytics Cookies</h2>

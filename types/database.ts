@@ -57,6 +57,7 @@ export interface Database {
           country: string;
           duration_days: 7 | 30;
           price: number;
+          compare_at_price: number | null;
           activation_fee: number | null;
           currency: string;
           created_at: string;

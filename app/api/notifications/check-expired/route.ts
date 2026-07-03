@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     if (user?.email) {
       await sendEmail(
         user.email,
-        "Your Sureodds Predict subscription has expired",
+        "Your Kingpredicts subscription has expired",
         `<p>Hi ${user.full_name ?? "there"},</p><p>Your <strong>${plan?.name ?? "subscription"}</strong> has expired. Renew from your dashboard to keep receiving predictions.</p>`
       );
     }
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
     if (user?.email) {
       await sendEmail(
         user.email,
-        "Your Sureodds Predict subscription expires soon",
+        "Your Kingpredicts subscription expires soon",
         `<p>Hi ${user.full_name ?? "there"},</p><p>Your <strong>${plan?.name ?? "subscription"}</strong> expires in less than 24 hours. Renew from your dashboard to avoid losing access.</p>`
       );
     }

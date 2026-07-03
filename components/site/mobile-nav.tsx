@@ -6,6 +6,7 @@ import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Logo } from "@/components/site/logo";
+import { ThemeToggle } from "@/components/site/theme-toggle";
 import type { Tables } from "@/types/database";
 
 const NAV_LINKS = [
@@ -25,10 +26,11 @@ export function MobileNav({ isLoggedIn, adLinks = [] }: { isLoggedIn: boolean; a
         <Menu className="size-5" />
       </SheetTrigger>
       <SheetContent side="right" className="w-72">
-        <SheetHeader>
+        <SheetHeader className="flex-row items-center justify-between">
           <SheetTitle>
             <Logo />
           </SheetTitle>
+          <ThemeToggle />
         </SheetHeader>
         <nav className="flex flex-col gap-1 px-4">
           {NAV_LINKS.map((link) => (
@@ -65,9 +67,14 @@ export function MobileNav({ isLoggedIn, adLinks = [] }: { isLoggedIn: boolean; a
               Dashboard
             </Button>
           ) : (
-            <Button onClick={() => setOpen(false)} render={<Link href="/pricing" />}>
-              View Pricing
-            </Button>
+            <>
+              <Button onClick={() => setOpen(false)} render={<Link href="/signup" />}>
+                Sign Up
+              </Button>
+              <Button variant="outline" onClick={() => setOpen(false)} render={<Link href="/login" />}>
+                Log In
+              </Button>
+            </>
           )}
         </div>
       </SheetContent>

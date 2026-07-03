@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { formatPrice } from "@/lib/utils/currency";
+import { PriceTag } from "@/components/site/price-tag";
 import { cn } from "@/lib/utils";
 import { submitCheckout } from "@/lib/actions/checkout";
 import type { Tables } from "@/types/database";
@@ -125,7 +125,7 @@ export function CheckoutClient({
                 {duration === 7 ? "1 Week" : "1 Month"} Subscription
               </p>
             </div>
-            <p className="text-xl font-bold">{formatPrice(amount, price.currency)}</p>
+            <PriceTag price={amount} compareAtPrice={price.compare_at_price} currency={price.currency} />
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
             After you submit your proof of payment, our team manually verifies it and sends you an
@@ -136,12 +136,13 @@ export function CheckoutClient({
         <div className="rounded-2xl border border-border bg-card p-6">
           <h2 className="font-bold">Your Contact Info</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            So we can reach you with your access code. No account needed.
+            So we can reach you with your access code once payment is confirmed.
           </p>
           <div className="mt-4 space-y-3">
             <div className="space-y-1">
               <Label>Name</Label>
               <Input
+                className="h-11 text-base"
                 placeholder="Your name"
                 value={contactName}
                 onChange={(e) => setContactName(e.target.value)}
@@ -151,6 +152,7 @@ export function CheckoutClient({
               <Label>Email</Label>
               <Input
                 type="email"
+                className="h-11 text-base"
                 placeholder="your@email.com"
                 value={contactEmail}
                 onChange={(e) => setContactEmail(e.target.value)}
@@ -159,6 +161,7 @@ export function CheckoutClient({
             <div className="space-y-1">
               <Label>Phone / WhatsApp</Label>
               <Input
+                className="h-11 text-base"
                 placeholder="+234..."
                 value={contactPhone}
                 onChange={(e) => setContactPhone(e.target.value)}
@@ -236,7 +239,7 @@ export function CheckoutClient({
           onClick={handleSubmit}
           disabled={submitting || paymentMethods.length === 0}
         >
-          {submitting ? "Submitting…" : "Submit Payment Proof"}
+          {submitting ? "Submitting…" : file ? "Submit Payment Proof" : "Upload Proof"}
         </Button>
       </div>
     </div>

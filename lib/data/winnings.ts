@@ -78,6 +78,32 @@ export async function getWinningsStats(planId: string, trailingDays = 30) {
   return { successRate, totalPicks, winStreak };
 }
 
+export async function getOverallWinningsStats(trailingDays = 30) {
+  const supabase = await createClient();
+  const since = subDays(new Date(), trailingDays).toISOString().slice(0, 10);
+
+  const { data } = await supabase
+    .from("vip_winnings")
+    .select("result, date")
+    .gte("date", since)
+    .order("date", { ascending: false });
+
+  const rows = data ?? [];
+  const totalPicks = rows.length;
+  const wins = rows.filter((r) => r.result === "win").length;
+  const decided = rows.filter((r) => r.result !== "push").length;
+  const successRate = decided > 0 ? Math.round((wins / decided) * 100) : 0;
+
+  let winStreak = 0;
+  for (const row of rows) {
+    if (row.result === "push") continue;
+    if (row.result === "win") winStreak += 1;
+    else break;
+  }
+
+  return { successRate, totalPicks, winStreak };
+}
+
 export interface GroupedWinnings {
   plan: Tables<"plans">;
   entries: Tables<"vip_winnings">[];

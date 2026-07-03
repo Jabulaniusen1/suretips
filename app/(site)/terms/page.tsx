@@ -7,12 +7,12 @@ export default function TermsPage() {
   return (
     <LegalPage title="Terms & Conditions">
       <p>
-        These Terms govern your use of Sureodds Predict. By using the site or subscribing to a VIP package,
+        These Terms govern your use of Kingpredicts. By using the site or subscribing to a VIP package,
         you agree to these Terms.
       </p>
       <h2>1. Service Description</h2>
       <p>
-        Sureodds Predict provides football predictions, statistics, and related content for informational and
+        Kingpredicts provides football predictions, statistics, and related content for informational and
         entertainment purposes. We do not operate as a bookmaker and do not accept bets.
       </p>
       <h2>2. Subscriptions & Payment</h2>

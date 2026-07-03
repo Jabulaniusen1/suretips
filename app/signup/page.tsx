@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { Suspense } from "react";
+import { AuthShell } from "@/components/auth/auth-shell";
+import { SignupForm } from "@/components/auth/signup-form";
 
 export const metadata: Metadata = { title: "Sign Up" };
 
 export default function SignupPage() {
-  redirect("/pricing");
+  return (
+    <AuthShell title="Create your account" description="Sign up to track your predictions and packages in one place.">
+      <Suspense>
+        <SignupForm />
+      </Suspense>
+    </AuthShell>
+  );
 }

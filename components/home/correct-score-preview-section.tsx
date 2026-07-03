@@ -28,7 +28,7 @@ export async function CorrectScorePreviewSection({ period, date }: { period: Dat
           currentDate={range.date}
         />
       </div>
-      <div className="relative mt-6 min-h-[22rem] overflow-hidden rounded-2xl border border-border bg-card p-4">
+      <div className="relative mt-6 min-h-[22rem] overflow-hidden rounded-2xl border border-brand/20 bg-card p-4 shadow-sm">
         <div className="pointer-events-none">
           <PredictionList predictions={predictions} emptyLabel="No correct score picks published for this date yet." />
         </div>

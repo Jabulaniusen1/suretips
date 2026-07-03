@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Privacy Policy" };
 export default function PrivacyPage() {
   return (
     <LegalPage title="Privacy Policy">
-      <p>This Privacy Policy explains how Sureodds Predict collects, uses, and protects your information.</p>
+      <p>This Privacy Policy explains how Kingpredicts collects, uses, and protects your information.</p>
       <h2>Information We Collect</h2>
       <p>
         Contact details (name, email, phone, country), payment proof images you upload at checkout, and usage

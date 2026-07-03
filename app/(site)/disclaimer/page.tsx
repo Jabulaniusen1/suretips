@@ -7,7 +7,7 @@ export default function DisclaimerPage() {
   return (
     <LegalPage title="Disclaimer">
       <p>
-        Sureodds Predict provides football predictions for informational and entertainment purposes only. We
+        Kingpredicts provides football predictions for informational and entertainment purposes only. We
         are not a bookmaker, and nothing on this site constitutes financial or betting advice.
       </p>
       <h2>No Guarantees</h2>

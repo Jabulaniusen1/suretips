@@ -21,9 +21,9 @@ export interface SiteConfig {
 
 const DEFAULTS: SiteConfig = {
   hero: {
-    headline: "Sureodds Predict",
-    subtext: "Accurate, transparent football predictions backed by proof.",
-    primary_cta_label: "Subscribe to VIP",
+    headline: "Football predictions worth trusting",
+    subtext: "Every pick, every result, out in the open — so you can judge our form before you ever pay for a tip.",
+    primary_cta_label: "Go VIP",
     secondary_cta_label: "Join Telegram",
   },
   telegram_url: "https://t.me/sureoddspredict",

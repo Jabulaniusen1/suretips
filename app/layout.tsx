@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Urbanist, Geist_Mono } from "next/font/google";
+import { Sora, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
-const urbanist = Urbanist({
-  variable: "--font-urbanist",
+const sora = Sora({
+  variable: "--font-sora",
   subsets: ["latin"],
 });
 
@@ -15,11 +16,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Sureodds Predict — Accurate Football Predictions",
-    template: "%s | Sureodds Predict",
+    default: "Kingpredicts — Accurate Football Predictions",
+    template: "%s | Kingpredicts",
   },
   description:
-    "Sureodds Predict gives you accurate, transparent football predictions backed by proof — daily odds combos, correct scores, and a track record you can check.",
+    "Kingpredicts gives you accurate, transparent football predictions backed by proof — daily odds combos, correct scores, and a track record you can check.",
 };
 
 export default function RootLayout({
@@ -30,11 +31,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${urbanist.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
+      className={`${sora.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        {children}
-        <Toaster richColors position="top-center" />
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          {children}
+          <Toaster richColors position="top-center" />
+        </ThemeProvider>
       </body>
     </html>
   );
