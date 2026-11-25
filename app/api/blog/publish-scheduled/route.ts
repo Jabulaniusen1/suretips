@@ -3,6 +3,9 @@ import { isAuthorizedCronRequest } from "@/lib/cron";
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/service";
 
+// Cron endpoint: never cache (Cloudflare runs it through the page cache pipeline).
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   if (!isAuthorizedCronRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

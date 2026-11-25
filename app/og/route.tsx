@@ -1,20 +1,15 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { ImageResponse } from "next/og";
+import { OG_LOGO_DATA_URL } from "./logo-data";
 
 // Branded social sharing card: /og (default) or /og?title=Page%20title.
 // Used as the Open Graph / Twitter image for every page without its own.
-
-let logoData: Promise<string> | undefined;
-function loadLogo() {
-  logoData ??= readFile(join(process.cwd(), "public/logo-on-dark.png")).then((buf) => `data:image/png;base64,${buf.toString("base64")}`);
-  return logoData;
-}
+// The logo is embedded (./logo-data.ts) rather than read from public/, because
+// Cloudflare Workers have no filesystem.
 
 export async function GET(request: Request) {
   const raw = new URL(request.url).searchParams.get("title") ?? "";
   const title = raw.replace(/\s+/g, " ").trim().slice(0, 120) || "Free Football Predictions & Match Analysis";
-  const logo = await loadLogo();
+  const logo = OG_LOGO_DATA_URL;
 
   return new ImageResponse(
     (

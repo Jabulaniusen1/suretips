@@ -56,37 +56,20 @@ Copy `.env.local.example` to `.env.local` and fill in:
 | `CRON_SECRET` | Yes (for cron) | Shared secret the three cron routes require in `Authorization: Bearer <secret>`. Generate with `openssl rand -hex 32`. |
 | `NEXT_PUBLIC_GA_ID` | No | Google Analytics. |
 
-## 5. Cron-triggered routes
+## 5. Scheduled jobs
 
-Three routes do scheduled background work and must be called periodically by an external scheduler
-(Vercel Cron, GitHub Actions, or any HTTP cron service). Each requires
-`Authorization: Bearer ${CRON_SECRET}` and returns 401 without it.
+Three routes do the background work. Each requires `Authorization: Bearer ${CRON_SECRET}` and returns
+401 without it.
 
-| Route | Suggested schedule | What it does |
+| Route | Schedule | What it does |
 |---|---|---|
-| `GET /api/predictions/sync-free-tips` | every few hours | Idempotently tops up today's Free Tips (`free-games` plan) with one real, odds-backed pick per filter category (Home Win, Away Win, BTTS, Double Chance, Over 1.5, Over 2.5) pulled from live API-Sports fixtures/odds. Skips categories already covered for the day. |
-| `GET /api/predictions/update-scores` | every 15 min | Looks up live/finished scores for predictions with an `external_fixture_id`, updates status/score, auto-grades win/loss where the pick is a recognized pattern (match winner, BTTS, over/under, correct score), and scores yesterday/today's Free Games entries. |
-| `GET /api/notifications/check-expired` | hourly | Expires subscriptions past `expiry_date` (email + in-app notification), and sends a one-time "expires within 24h" reminder. |
-| `GET /api/blog/publish-scheduled` | every 5–15 min | Publishes blog posts whose `scheduled_at` has passed. |
+| `GET /api/predictions/sync-free-tips` | `0 */4 * * *` | Tops up each market to 10 odds-backed picks for today, tomorrow and the day after (API-Sports fixtures and odds). Never edits or deletes existing picks. |
+| `GET /api/predictions/update-scores` | `*/15 * * * *` | Updates live/final scores, grades finished picks and approves the graded results for the public record. |
+| `GET /api/blog/publish-scheduled` | `*/10 * * * *` | Publishes blog posts whose `scheduled_at` has passed. |
 
-Example `vercel.json`:
-
-```json
-{
-  "crons": [
-    { "path": "/api/predictions/sync-free-tips", "schedule": "0 */4 * * *" },
-    { "path": "/api/predictions/update-scores", "schedule": "*/15 * * * *" },
-    { "path": "/api/notifications/check-expired", "schedule": "0 * * * *" },
-    { "path": "/api/blog/publish-scheduled", "schedule": "*/10 * * * *" }
-  ]
-}
-```
-
-Vercel Cron calls your routes without custom headers, so either front them with a separate trigger
-service that can set `Authorization`, or check `request.nextUrl.searchParams.get("secret")` instead —
-adjust `lib/cron.ts` if you go that route. If deploying on Vercel and using Vercel Cron directly, the
-simplest option is an external scheduler (e.g. cron-job.org, GitHub Actions `schedule` + `curl`) that
-can set the bearer header.
+On Cloudflare these run as Cron Triggers declared in `cloudflare.config.ts`; `worker/index.ts` maps
+each schedule to its route and calls it with `CRON_SECRET`. (`vercel.json` holds the same schedules
+for Vercel.)
 
 ## 6. Local development
 
@@ -100,6 +83,52 @@ pnpm dev
 pnpm build
 pnpm lint
 ```
+
+## 8. Deploy to Cloudflare Workers
+
+The site deploys to Cloudflare Workers with [vinext](https://github.com/cloudflare/vinext), Cloudflare's
+implementation of the Next.js API on Vite. The Next.js scripts (`pnpm dev`, `pnpm build`) keep working;
+the Cloudflare build uses the `*:vinext` scripts.
+
+**Requirements:** Node 22+ (`nvm use` reads `.nvmrc`) and a Cloudflare account on the **Workers Paid**
+plan; the free plan's 10 ms CPU limit per request is too low for server-rendered pages.
+
+**One-time setup**
+
+1. Log in: `npx cf auth login`
+2. Set the live address in `.env.production.local`. It is built into canonical links and the sitemap,
+   so the deploy refuses to run while it points at localhost:
+   ```
+   NEXT_PUBLIC_SITE_URL=https://your-domain.com
+   ```
+3. Make sure `.env.local` has `SUPABASE_SERVICE_ROLE_KEY`, `API_FOOTBALL_KEY`, `API_FOOTBALL_BASE_URL`
+   and `CRON_SECRET`.
+
+**Deploy**
+
+```bash
+pnpm deploy:cloudflare            # build + deploy
+pnpm deploy:cloudflare --dry-run  # build + validate, uploads nothing
+```
+
+This builds with Vite and deploys the `suretips` Worker, uploading the four secrets above with each
+version (from your env files, through a temporary file that is deleted afterwards). The KV namespace used
+for the page and data cache is created on the first deploy. The site is served at
+`https://suretips.<account>.workers.dev` until you add a custom domain in the Cloudflare dashboard. Then
+update `NEXT_PUBLIC_SITE_URL` and redeploy, and set the same address as the Site URL in Supabase
+(Authentication → URL Configuration).
+
+**Local Cloudflare runtime:** `pnpm dev:vinext` serves the app at http://localhost:3002 inside workerd,
+with the declared secrets read from `.env.local`.
+
+**Adding a server-side environment variable:** declare it in `cloudflare.config.ts`
+(`bindings.secret()`), add it to `SECRET_NAMES` in `scripts/deploy-cloudflare.mjs`, and put its value
+in `.env.local`. Only declared names reach the Worker. `NEXT_PUBLIC_*` values are built into the code
+instead.
+
+**Contact form email** needs SMTP settings (`SMTP_HOST` etc.), which are not configured yet; until they
+are, the form tells visitors it is unavailable. SMTP over `nodemailer` is not verified on Workers. If it
+fails there, use an HTTP email API instead.
 
 ## Architecture notes
 

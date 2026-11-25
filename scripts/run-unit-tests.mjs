@@ -10,6 +10,8 @@ const root = resolve(import.meta.dirname, "..");
 const out = join(root, ".test-build");
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
+// The project is "type": "module" (vinext); the compiled tests are CommonJS.
+writeFileSync(join(out, "package.json"), JSON.stringify({ type: "commonjs" }));
 
 const tests = readdirSync(join(root, "tests/unit"))
   .filter((f) => f.endsWith(".test.ts"))
