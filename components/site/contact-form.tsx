@@ -11,6 +11,7 @@ export function ContactForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [website, setWebsite] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -20,7 +21,7 @@ export function ContactForm() {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, message }),
+        body: JSON.stringify({ name, email, message, website }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "Failed to send");
       toast.success("Message sent! We'll get back to you soon.");
@@ -35,18 +36,22 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-md space-y-4">
+    <form onSubmit={handleSubmit} className="relative max-w-md space-y-4">
       <div className="space-y-2">
-        <Label>Name</Label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} required />
+        <Label htmlFor="contact-name">Name</Label>
+        <Input id="contact-name" autoComplete="name" maxLength={100} value={name} onChange={(e) => setName(e.target.value)} required />
       </div>
       <div className="space-y-2">
-        <Label>Email</Label>
-        <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <Label htmlFor="contact-email">Email</Label>
+        <Input id="contact-email" type="email" autoComplete="email" maxLength={200} value={email} onChange={(e) => setEmail(e.target.value)} required />
       </div>
       <div className="space-y-2">
-        <Label>Message</Label>
-        <Textarea value={message} onChange={(e) => setMessage(e.target.value)} required rows={5} />
+        <Label htmlFor="contact-message">Message</Label>
+        <Textarea id="contact-message" minLength={10} maxLength={5000} value={message} onChange={(e) => setMessage(e.target.value)} required rows={5} />
+      </div>
+      <div aria-hidden className="absolute -left-[9999px] h-0 overflow-hidden">
+        <label htmlFor="contact-website">Website</label>
+        <input id="contact-website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
       </div>
       <Button type="submit" disabled={submitting}>
         {submitting ? "Sending…" : "Send Message"}

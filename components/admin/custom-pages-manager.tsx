@@ -1,18 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CustomPageForm } from "@/components/admin/custom-page-form";
-import { deleteCustomPage } from "@/lib/actions/admin/custom-pages";
+import { deleteCustomPage } from "@/lib/actions/client";
+import { isCustomPageIndexable } from "@/lib/seo/custom-page-rules";
+import { isMarketPageSlug } from "@/lib/seo/market-pages";
 import type { Tables } from "@/types/database";
 
 export function CustomPagesManager({ pages }: { pages: Tables<"custom_pages">[] }) {
-  const [editing, setEditing] = useState<Tables<"custom_pages"> | null>(null);
-  const [adding, setAdding] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   async function handleDelete(id: string) {
@@ -31,8 +30,8 @@ export function CustomPagesManager({ pages }: { pages: Tables<"custom_pages">[] 
   return (
     <div>
       <div className="flex justify-end">
-        <Button onClick={() => setAdding(true)}>
-          <Plus className="size-4" /> Add Page
+        <Button render={<Link href="/admin/pages/add" />}>
+          <Plus className="size-4" /> Add page
         </Button>
       </div>
       <div className="mt-4 overflow-x-auto rounded-2xl border border-border bg-card">
@@ -42,6 +41,7 @@ export function CustomPagesManager({ pages }: { pages: Tables<"custom_pages">[] 
               <th className="px-4 py-2">Title</th>
               <th className="px-4 py-2">Slug</th>
               <th className="px-4 py-2">Status</th>
+              <th className="px-4 py-2">Search</th>
               <th className="px-4 py-2"></th>
             </tr>
           </thead>
@@ -55,9 +55,18 @@ export function CustomPagesManager({ pages }: { pages: Tables<"custom_pages">[] 
                     {page.is_published ? "Published" : "Draft"}
                   </Badge>
                 </td>
+                <td className="px-4 py-2 text-xs">
+                  {isMarketPageSlug(page.slug) ? (
+                    <span className="text-brand">Overrides built-in page</span>
+                  ) : isCustomPageIndexable(page) ? (
+                    <span className="text-emerald-600">Indexable</span>
+                  ) : (
+                    <span className="text-muted-foreground">Noindex</span>
+                  )}
+                </td>
                 <td className="px-4 py-2">
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon-sm" onClick={() => setEditing(page)}>
+                    <Button variant="ghost" size="icon-sm" aria-label={`Edit ${page.title}`} render={<Link href={`/admin/pages/${page.id}`} />}>
                       <Pencil className="size-4" />
                     </Button>
                     <Button variant="ghost" size="icon-sm" disabled={busyId === page.id} onClick={() => handleDelete(page.id)}>
@@ -70,24 +79,6 @@ export function CustomPagesManager({ pages }: { pages: Tables<"custom_pages">[] 
           </tbody>
         </table>
       </div>
-
-      <Dialog open={adding} onOpenChange={setAdding}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Add Page</DialogTitle>
-          </DialogHeader>
-          <CustomPageForm onSaved={() => setAdding(false)} />
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Edit Page</DialogTitle>
-          </DialogHeader>
-          {editing && <CustomPageForm page={editing} onSaved={() => setEditing(null)} />}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

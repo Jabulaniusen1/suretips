@@ -1,10 +1,11 @@
 "use server";
 
+import { toActionResult } from "@/lib/actions/result";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/admin";
 
-export async function createAdLink(input: { title: string; url: string; description?: string; is_active: boolean }) {
+async function createAdLinkImpl(input: { title: string; url: string; description?: string; is_active: boolean }) {
   const admin = await requireAdmin();
   if (!admin) throw new Error("Forbidden");
 
@@ -13,9 +14,10 @@ export async function createAdLink(input: { title: string; url: string; descript
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/ad-links");
+  revalidatePath("/", "layout"); // ad links show in the site header
 }
 
-export async function deleteAdLink(id: string) {
+async function deleteAdLinkImpl(id: string) {
   const admin = await requireAdmin();
   if (!admin) throw new Error("Forbidden");
 
@@ -24,9 +26,10 @@ export async function deleteAdLink(id: string) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/ad-links");
+  revalidatePath("/", "layout"); // ad links show in the site header
 }
 
-export async function toggleAdLinkActive(id: string, isActive: boolean) {
+async function toggleAdLinkActiveImpl(id: string, isActive: boolean) {
   const admin = await requireAdmin();
   if (!admin) throw new Error("Forbidden");
 
@@ -35,4 +38,16 @@ export async function toggleAdLinkActive(id: string, isActive: boolean) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/ad-links");
+  revalidatePath("/", "layout"); // ad links show in the site header
+}
+
+// Exported actions return { ok, data | error } -- see lib/actions/result.ts.
+export async function createAdLink(...args: Parameters<typeof createAdLinkImpl>) {
+  return toActionResult(() => createAdLinkImpl(...args));
+}
+export async function deleteAdLink(...args: Parameters<typeof deleteAdLinkImpl>) {
+  return toActionResult(() => deleteAdLinkImpl(...args));
+}
+export async function toggleAdLinkActive(...args: Parameters<typeof toggleAdLinkActiveImpl>) {
+  return toActionResult(() => toggleAdLinkActiveImpl(...args));
 }

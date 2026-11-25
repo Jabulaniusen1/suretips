@@ -1,55 +1,37 @@
-import { subDays } from "date-fns";
+import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { addDaysToKey, lagosDateKey, lagosDayRange } from "@/lib/utils/date";
 
 export async function getAdminKpis() {
   const supabase = await createClient();
-  const now = new Date();
-  const last7d = subDays(now, 7).toISOString();
-  const last30d = subDays(now, 30).toISOString();
-  const last24h = subDays(now, 1).toISOString();
+  const today = lagosDayRange(lagosDateKey());
+  const tomorrow = lagosDayRange(addDaysToKey(lagosDateKey(), 1));
+  const now = new Date().toISOString();
+  const count = { count: "exact" as const, head: true };
 
-  const [
-    { count: activeSubscribers },
-    { data: revenueToday },
-    { data: revenue7d },
-    { data: revenue30d },
-    { count: pendingActivations },
-    { count: newSignups24h },
-    { count: newSignups7d },
-    { data: recentTransactions },
-  ] = await Promise.all([
-    supabase.from("user_subscriptions").select("id", { count: "exact", head: true }).eq("plan_status", "active"),
+  const [todayCount, tomorrowCount, awaiting, needsGrading, posts, pages] = await Promise.all([
+    supabase.from("predictions").select("id", count).gte("kickoff_time", today.from).lte("kickoff_time", today.to),
+    supabase.from("predictions").select("id", count).gte("kickoff_time", tomorrow.from).lte("kickoff_time", tomorrow.to),
+    supabase.from("predictions").select("id", count).eq("result_approved", false).neq("result", "pending"),
+    // Finished (or long past kickoff) but still ungraded: needs a manual result.
     supabase
-      .from("transactions")
-      .select("amount")
-      .eq("status", "completed")
-      .gte("created_at", new Date().toISOString().slice(0, 10)),
-    supabase.from("transactions").select("amount").eq("status", "completed").gte("created_at", last7d),
-    supabase.from("transactions").select("amount").eq("status", "completed").gte("created_at", last30d),
-    supabase
-      .from("user_subscriptions")
-      .select("id", { count: "exact", head: true })
-      .eq("plan_status", "active")
-      .eq("activation_fee_paid", false),
-    supabase.from("users").select("id", { count: "exact", head: true }).gte("created_at", last24h),
-    supabase.from("users").select("id", { count: "exact", head: true }).gte("created_at", last7d),
-    supabase
-      .from("transactions")
-      .select("*, users(full_name, email), plans(name)")
-      .order("created_at", { ascending: false })
-      .limit(10),
+      .from("predictions")
+      .select("id", count)
+      .eq("result", "pending")
+      .lte("kickoff_time", new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()),
+    supabase.from("blog_posts").select("id", count).eq("published", true).lte("published_at", now),
+    supabase.from("custom_pages").select("id", count).eq("is_published", true),
+    // User accounts are turned off, so new sign-ups are no longer counted.
+    // supabase.from("users").select("id", count).gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
   ]);
 
-  const sum = (rows: { amount: number }[] | null) => (rows ?? []).reduce((acc, r) => acc + r.amount, 0);
-
   return {
-    activeSubscribers: activeSubscribers ?? 0,
-    revenueToday: sum(revenueToday),
-    revenue7d: sum(revenue7d),
-    revenue30d: sum(revenue30d),
-    pendingActivations: pendingActivations ?? 0,
-    newSignups24h: newSignups24h ?? 0,
-    newSignups7d: newSignups7d ?? 0,
-    recentTransactions: recentTransactions ?? [],
+    predictionsToday: todayCount.count ?? 0,
+    predictionsTomorrow: tomorrowCount.count ?? 0,
+    awaitingVerification: awaiting.count ?? 0,
+    needsGrading: needsGrading.count ?? 0,
+    publishedPosts: posts.count ?? 0,
+    publishedPages: pages.count ?? 0,
+    // newUsers7d: signups.count ?? 0,
   };
 }

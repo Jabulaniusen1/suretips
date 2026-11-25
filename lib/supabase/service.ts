@@ -1,17 +1,17 @@
+import "server-only";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { supabaseServiceRoleKey, supabaseUrl } from "@/lib/env";
 import type { Database } from "@/types/database";
 
 /**
- * Service-role client for trusted server-to-server jobs only (cron routes
- * under app/api/**). These run with no user session, so RLS can't grant
- * them anything -- the service role key bypasses RLS entirely. Never import
- * this outside CRON_SECRET-gated routes, and never expose the key to the
- * client (no NEXT_PUBLIC_ prefix).
+ * Service-role client for trusted server-side jobs only: the CRON_SECRET-
+ * gated routes under app/api/** and admin-authorised server actions that run
+ * those same jobs on demand. The service role key bypasses RLS, so callers
+ * must do their own authorisation first. `server-only` makes importing this
+ * module from a Client Component a build error.
  */
 export function createServiceClient() {
-  return createSupabaseClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
+  return createSupabaseClient<Database>(supabaseUrl(), supabaseServiceRoleKey(), {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 }

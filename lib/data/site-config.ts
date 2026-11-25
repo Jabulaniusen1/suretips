@@ -1,12 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import "server-only";
+import { cache } from "react";
+import { createPublicClient } from "@/lib/supabase/public";
 
 export interface SiteConfig {
-  hero: {
-    headline: string;
-    subtext: string;
-    primary_cta_label: string;
-    secondary_cta_label: string;
-  };
   telegram_url: string;
   whatsapp_number: string;
   contact_email: string;
@@ -19,35 +15,44 @@ export interface SiteConfig {
   };
 }
 
+// Empty defaults: links and contact details only render once an admin has
+// set real values in /admin/config. Never ship placeholder contact details.
 const DEFAULTS: SiteConfig = {
-  hero: {
-    headline: "Football predictions worth trusting",
-    subtext: "Every pick, every result, out in the open — so you can judge our form before you ever pay for a tip.",
-    primary_cta_label: "Go VIP",
-    secondary_cta_label: "Join Telegram",
-  },
-  telegram_url: "https://t.me/sureoddspredict",
+  telegram_url: "",
   whatsapp_number: "",
-  contact_email: "support@sureoddspredict.com",
+  contact_email: "",
   support_link: "",
   social_links: {},
 };
 
-export async function getSiteConfig(): Promise<SiteConfig> {
-  const supabase = await createClient();
-  const { data } = await supabase.from("site_config").select("key, value");
+function asString(value: unknown, fallback: string): string {
+  return typeof value === "string" ? value.trim() : fallback;
+}
 
-  const map = new Map(data?.map((row) => [row.key, row.value]) ?? []);
+export const getSiteConfig = cache(async (): Promise<SiteConfig> => {
+  const { data, error } = await createPublicClient().from("site_config").select("key, value");
+  if (error) console.error(`[site-config] ${error.message}`);
+
+  const map = new Map<string, unknown>(data?.map((row) => [row.key, row.value]) ?? []);
+  const social = (map.get("social_links") ?? {}) as Record<string, unknown>;
 
   return {
-    hero: { ...DEFAULTS.hero, ...(map.get("hero") as unknown as Partial<SiteConfig["hero"]>) },
-    telegram_url: (map.get("telegram_url") as unknown as string) ?? DEFAULTS.telegram_url,
-    whatsapp_number: (map.get("whatsapp_number") as unknown as string) ?? DEFAULTS.whatsapp_number,
-    contact_email: (map.get("contact_email") as unknown as string) ?? DEFAULTS.contact_email,
-    support_link: (map.get("support_link") as unknown as string) ?? DEFAULTS.support_link,
+    telegram_url: asString(map.get("telegram_url"), DEFAULTS.telegram_url),
+    whatsapp_number: asString(map.get("whatsapp_number"), DEFAULTS.whatsapp_number),
+    contact_email: asString(map.get("contact_email"), DEFAULTS.contact_email),
+    support_link: asString(map.get("support_link"), DEFAULTS.support_link),
     social_links: {
-      ...DEFAULTS.social_links,
-      ...(map.get("social_links") as unknown as SiteConfig["social_links"]),
+      facebook: asString(social.facebook, ""),
+      twitter: asString(social.twitter, ""),
+      instagram: asString(social.instagram, ""),
+      youtube: asString(social.youtube, ""),
     },
   };
+});
+
+/** Configured social profile URLs, for Organization `sameAs`. */
+export function socialProfileUrls(config: SiteConfig): string[] {
+  return [config.telegram_url, ...Object.values(config.social_links)].filter((url): url is string =>
+    Boolean(url && /^https:\/\//.test(url))
+  );
 }

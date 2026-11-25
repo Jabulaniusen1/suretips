@@ -7,7 +7,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatShortDate } from "@/lib/utils/date";
-import { deleteBlogPost } from "@/lib/actions/admin/blog";
+import { deleteBlogPost } from "@/lib/actions/client";
 import type { Tables } from "@/types/database";
 
 export function BlogList({ posts }: { posts: Tables<"blog_posts">[] }) {

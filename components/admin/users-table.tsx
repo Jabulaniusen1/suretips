@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { formatShortDate } from "@/lib/utils/date";
-import { toggleUserAdmin } from "@/lib/actions/admin/users";
+import { toggleUserAdmin } from "@/lib/actions/client";
 import type { Tables } from "@/types/database";
 
 export function UsersTable({ users, currentUserId }: { users: Tables<"users">[]; currentUserId: string }) {

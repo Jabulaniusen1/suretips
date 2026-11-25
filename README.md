@@ -24,27 +24,22 @@ pnpm install
 
 1. Create a project at supabase.com (or run `supabase start` locally with the Supabase CLI).
 2. Link this repo to it: `supabase link --project-ref <your-project-ref>`.
-3. Push the schema: `supabase db push` (applies everything in `supabase/migrations/` in order —
-   tables, RLS policies, triggers, storage buckets, and seed data for plans/competitions/site config).
-4. In the Supabase dashboard, go to **Database > Replication** and confirm the `messages` table is
-   added to the `supabase_realtime` publication (the migration adds this, but some hosted projects
-   need it confirmed manually the first time). This powers the live chat UI.
-5. Regenerate the typed schema once the real project exists (the checked-in `types/database.ts` is
-   hand-written to match the migrations until you do this):
+3. Push the schema: `supabase db push`, or paste
+   `supabase/migrations/20261125120000_initial_schema.sql` into the dashboard's SQL Editor and run it.
+   This single baseline migration creates the tables, RLS policies, Data API grants, triggers,
+   storage buckets (`avatars`, `blog-images`), realtime on `messages` (live chat), and seed data for
+   competitions and site config. Add future schema changes as new files after it.
+4. Regenerate the typed schema once the real project exists (the checked-in `types/database.ts` is
+   hand-written to match the migration until you do this):
    ```bash
    supabase gen types typescript --linked > types/database.ts
    ```
 
-### Seed data you must edit before going live
+### After the first sign-up
 
-The seed migration (`20260629171449_seed_data.sql`) inserts placeholder rows so the app boots without
-errors. Before launch, use the admin panel (`/admin/plans`, `/admin/payment-methods`, `/admin/config`)
-to replace:
-
-- **Plan prices** — real prices per country/duration for each plan.
-- **Payment methods** — your real bank transfer / crypto wallet details (shown to users at checkout).
-- **Site config** — social links, contact email, Telegram link, homepage trust copy.
 - Promote your own account to admin: `update public.users set is_admin = true where email = 'you@example.com';`
+- In `/admin/config`, set the contact email, Telegram link, WhatsApp number and social links. They
+  start empty, which hides them in the UI.
 
 ## 4. Environment variables
 

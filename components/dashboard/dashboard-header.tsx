@@ -24,9 +24,7 @@ export async function DashboardHeader() {
     <header className="sticky top-0 z-40 border-b border-border bg-background">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-3">
-          <Link href="/dashboard">
-            <Logo />
-          </Link>
+          <Logo href="/dashboard" />
           <span className="hidden text-sm text-muted-foreground sm:inline">
             Welcome, {user.profile.full_name ?? "there"} · {user.profile.country}
           </span>

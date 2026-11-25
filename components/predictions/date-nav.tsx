@@ -6,62 +6,56 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatShortDate } from "@/lib/utils/date";
 import type { DateNavPeriod } from "@/lib/utils/date";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
+/**
+ * Previous / Today / Tomorrow links plus a date picker. "Today" links to the
+ * bare base path so the canonical URL is the one users and crawlers share;
+ * other periods use query parameters, which every page canonicalises away.
+ */
 export function DateNav({
   active,
   basePath,
-  extraParams,
-  currentDate,
-  dateParamName = "date",
+  dateKey,
+  dateLabel,
 }: {
   active: DateNavPeriod;
   basePath: string;
-  extraParams?: Record<string, string>;
-  currentDate?: Date;
-  dateParamName?: string;
+  /** Currently shown Lagos day, yyyy-MM-dd. */
+  dateKey: string;
+  dateLabel: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  // Noon local time keeps the picker on the same calendar day in every time zone.
+  const selected = new Date(`${dateKey}T12:00:00`);
 
-  const periods: { value: DateNavPeriod; label: string }[] = [
-    { value: "previous", label: "Previous" },
-    { value: "today", label: "Today" },
-    { value: "tomorrow", label: "Tomorrow" },
+  const periods: { value: DateNavPeriod; label: string; href: string }[] = [
+    { value: "previous", label: "Yesterday", href: `${basePath}?period=previous` },
+    { value: "today", label: "Today", href: basePath },
+    { value: "tomorrow", label: "Tomorrow", href: `${basePath}?period=tomorrow` },
   ];
-
-  function hrefFor(period: DateNavPeriod) {
-    const query = new URLSearchParams(extraParams);
-    query.set("period", period);
-    query.delete(dateParamName);
-    return `${basePath}?${query.toString()}`;
-  }
 
   function handleSelect(date: Date | undefined) {
     if (!date) return;
     setOpen(false);
-    const query = new URLSearchParams(extraParams);
-    query.set("period", "custom");
-    query.set(dateParamName, format(date, "yyyy-MM-dd"));
-    router.push(`${basePath}?${query.toString()}`);
+    router.push(`${basePath}?date=${format(date, "yyyy-MM-dd")}`);
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <nav aria-label="Choose a date" className="flex flex-wrap items-center gap-2">
       <div className="inline-flex rounded-lg border border-border bg-card p-1">
         {periods.map((period) => (
           <Link
             key={period.value}
-            href={hrefFor(period.value)}
+            href={period.href}
+            aria-current={active === period.value ? "page" : undefined}
             className={cn(
               "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              active === period.value
-                ? "bg-brand text-brand-foreground"
-                : "text-muted-foreground hover:text-foreground"
+              active === period.value ? "bg-brand text-brand-foreground" : "text-muted-foreground hover:text-foreground"
             )}
           >
             {period.label}
@@ -71,20 +65,16 @@ export function DateNav({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           render={
-            <Button
-              variant="outline"
-              size="sm"
-              className={cn("gap-1.5", active === "custom" && "border-brand text-brand")}
-            >
-              <CalendarIcon className="size-4" />
-              {active === "custom" && currentDate ? formatShortDate(currentDate) : "Pick a date"}
+            <Button variant="outline" size="sm" className={cn("gap-1.5", active === "custom" && "border-brand text-brand")}>
+              <CalendarIcon aria-hidden className="size-4" />
+              {active === "custom" ? dateLabel : "Pick a date"}
             </Button>
           }
         />
         <PopoverContent className="w-auto p-0">
-          <Calendar mode="single" selected={currentDate} onSelect={handleSelect} defaultMonth={currentDate} />
+          <Calendar mode="single" selected={selected} onSelect={handleSelect} defaultMonth={selected} />
         </PopoverContent>
       </Popover>
-    </div>
+    </nav>
   );
 }

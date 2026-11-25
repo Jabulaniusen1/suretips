@@ -1,157 +1,192 @@
-import { startOfDay, endOfDay } from "date-fns";
+import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
-import { getFixturesByDateRange, getOdds } from "@/lib/football-api";
+import { FootballApiError, getFixturesByDate, getOdds } from "@/lib/football-api";
 import { sortFixturesByNotability } from "@/lib/utils/fixture-priority";
+import { lagosDayRange } from "@/lib/utils/date";
+import { MARKET_KEYS, marketOf, type MarketKey } from "@/lib/predictions/markets";
+import { mergeBookmakerBets, selectPicksFromOdds } from "@/lib/predictions/pick-selection";
 import type { Database } from "@/types/database";
 
 type PredictionInsert = Database["public"]["Tables"]["predictions"]["Insert"];
 
-interface OddsValue { value: string; odd: string }
-interface OddsBet { name: string; values: OddsValue[] }
-interface OddsResponse { bookmakers: Array<{ bets: OddsBet[] }> }
+/** Markets the automatic sync fills. Correct scores are editorial-only. */
+const AUTO_MARKETS = MARKET_KEYS.filter((m) => m !== "correct_score");
 
-type Category = "home_win" | "away_win" | "btts" | "double_chance" | "over_1_5" | "over_2_5";
+/** Target number of picks per market per day. */
+const TARGET_PER_MARKET = 10;
 
-const CATEGORIES: Category[] = ["home_win", "away_win", "btts", "double_chance", "over_1_5", "over_2_5"];
+/** Max fixtures scanned per day per run -- each costs one /odds API call. */
+const MAX_FIXTURE_SCAN = 60;
 
-// Target number of picks per filter category shown to users
-const TARGET_PER_CATEGORY = 10;
+/** Don't publish picks for matches kicking off within this window. */
+const MIN_LEAD_TIME_MS = 15 * 60 * 1000;
 
-// Max fixtures to scan per run — each costs one getOdds() API call
-const MAX_FIXTURE_SCAN = 80;
+/** Stop scanning after this many consecutive odds-request failures. */
+const MAX_CONSECUTIVE_FAILURES = 5;
 
-function findBet(odds: OddsResponse[] | null, name: string): OddsBet | undefined {
-  return odds?.[0]?.bookmakers?.[0]?.bets?.find((b) => b.name === name);
+/**
+ * Minimum gap between odds requests, to stay under API-Sports per-minute
+ * limits (plans range from 10 to 1,200+ requests/minute). 250 ms caps a run
+ * at 240 requests/minute; raise it for smaller plans.
+ */
+const ODDS_REQUEST_INTERVAL_MS = Math.max(0, Number(process.env.API_FOOTBALL_MIN_INTERVAL_MS ?? 250) || 0);
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export interface SyncDayResult {
+  date: string;
+  status: "ok" | "covered" | "no_fixtures" | "partial" | "error";
+  inserted: number;
+  scanned: number;
+  byMarket: Partial<Record<MarketKey, number>>;
+  error?: string;
 }
 
-function valueOdd(bet: OddsBet | undefined, value: string): number | null {
-  const match = bet?.values.find((v) => v.value === value);
-  return match ? Number(match.odd) : null;
-}
-
-function confidenceFromOdds(odd: number): number {
-  return Math.max(55, Math.min(92, Math.round(100 / odd) + 5));
-}
-
-function categoryKey(predictionType: string): Category | null {
-  const t = predictionType.toLowerCase();
-  if (t === "home win") return "home_win";
-  if (t === "away win") return "away_win";
-  if (t.includes("btts") || t.includes("both teams")) return "btts";
-  if (t.includes("double chance")) return "double_chance";
-  if (t.includes("over 1.5")) return "over_1_5";
-  if (t.includes("over 2.5")) return "over_2_5";
-  return null;
-}
-
-export async function autoSyncFreeTips(targetDate: Date = new Date()) {
+/**
+ * Tops up automatically generated free picks for one Lagos calendar day.
+ *
+ * Never deletes or edits existing predictions, so a failed or partial run
+ * (API outage, quota exhausted) leaves previously published picks intact.
+ * API failures are reported as errors -- never as "no fixtures".
+ */
+export async function autoSyncFreeTips(dateKey: string): Promise<SyncDayResult> {
+  const base = { date: dateKey, inserted: 0, scanned: 0, byMarket: {} };
   const supabase = createServiceClient();
+  const { from, to } = lagosDayRange(dateKey);
 
-  const { data: plan } = await supabase.from("plans").select("id").eq("slug", "free-games").single();
-  if (!plan) return { inserted: 0, reason: "free-games plan not found" };
-
-  const from = startOfDay(targetDate).toISOString();
-  const to = endOfDay(targetDate).toISOString();
-
-  // Count existing picks per category and track (fixture_id, prediction_type) pairs already inserted
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from("predictions")
-    .select("prediction_type, external_fixture_id")
-    .eq("plan_id", plan.id)
+    .select("external_fixture_id, prediction_type, market")
     .gte("kickoff_time", from)
     .lte("kickoff_time", to);
 
-  const counts: Record<Category, number> = {
-    home_win: 0, away_win: 0, btts: 0, double_chance: 0, over_1_5: 0, over_2_5: 0,
-  };
-  const existingPairs = new Set<string>();
+  if (existingError) {
+    return { ...base, status: "error", error: `Could not read existing predictions: ${existingError.message}` };
+  }
 
+  const counts = Object.fromEntries(AUTO_MARKETS.map((m) => [m, 0])) as Record<MarketKey, number>;
+  const taken = new Set<string>();
+  // Fixtures already processed by an earlier run (or picked by an editor).
+  // Their odds were already evaluated, so re-scanning them would only spend
+  // API quota -- every 4-hourly run would otherwise re-check the same matches.
+  const processedFixtures = new Set<number>();
   for (const row of existing ?? []) {
-    const cat = categoryKey(row.prediction_type ?? "");
-    if (cat) counts[cat]++;
-    if (row.external_fixture_id) {
-      existingPairs.add(`${row.external_fixture_id}:${(row.prediction_type ?? "").toLowerCase()}`);
+    if (row.external_fixture_id) processedFixtures.add(row.external_fixture_id);
+    const market = marketOf(row);
+    if (!market) continue;
+    counts[market] = (counts[market] ?? 0) + 1;
+    if (row.external_fixture_id) taken.add(`${row.external_fixture_id}:${market}`);
+  }
+
+  const marketFull = (m: MarketKey) => (counts[m] ?? 0) >= TARGET_PER_MARKET;
+  if (AUTO_MARKETS.every(marketFull)) return { ...base, status: "covered" };
+
+  let fixtures;
+  try {
+    fixtures = await getFixturesByDate(dateKey);
+  } catch (err) {
+    return { ...base, status: "error", error: err instanceof Error ? err.message : String(err) };
+  }
+
+  const earliestKickoff = Date.now() + MIN_LEAD_TIME_MS;
+  const candidates = sortFixturesByNotability(
+    fixtures.filter(
+      (f) => f.fixture.status.short === "NS" && new Date(f.fixture.date).getTime() > earliestKickoff && !processedFixtures.has(f.fixture.id)
+    )
+  ).slice(0, MAX_FIXTURE_SCAN);
+
+  if (candidates.length === 0) return { ...base, status: "no_fixtures" };
+
+  const rows: PredictionInsert[] = [];
+  const byMarket: Partial<Record<MarketKey, number>> = {};
+  let scanned = 0;
+  let consecutiveFailures = 0;
+  let stopReason: string | undefined;
+
+  for (const fixture of candidates) {
+    if (AUTO_MARKETS.every(marketFull)) break;
+
+    let bets;
+    try {
+      if (scanned > 0 || consecutiveFailures > 0) await sleep(ODDS_REQUEST_INTERVAL_MS);
+      const odds = await getOdds(fixture.fixture.id);
+      bets = mergeBookmakerBets(odds[0]?.bookmakers ?? [], Number(process.env.API_FOOTBALL_BOOKMAKER_ID) || null);
+      consecutiveFailures = 0;
+    } catch (err) {
+      if (err instanceof FootballApiError && (err.kind === "rate_limited" || err.kind === "not_configured")) {
+        stopReason = err.message;
+        break;
+      }
+      consecutiveFailures += 1;
+      if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+        stopReason = `Stopped after ${consecutiveFailures} consecutive odds failures: ${err instanceof Error ? err.message : err}`;
+        break;
+      }
+      continue;
+    }
+    scanned += 1;
+    if (bets.length === 0) continue;
+
+    for (const pick of selectPicksFromOdds(bets)) {
+      const key = `${fixture.fixture.id}:${pick.market}`;
+      if (taken.has(key) || marketFull(pick.market)) continue;
+      taken.add(key);
+      counts[pick.market] += 1;
+      byMarket[pick.market] = (byMarket[pick.market] ?? 0) + 1;
+
+      rows.push({
+        home_team: fixture.teams.home.name,
+        away_team: fixture.teams.away.name,
+        league: fixture.league.name,
+        league_id: fixture.league.id,
+        external_fixture_id: fixture.fixture.id,
+        home_team_logo: fixture.teams.home.logo,
+        away_team_logo: fixture.teams.away.logo,
+        kickoff_time: fixture.fixture.date,
+        prediction_type: pick.predictionType,
+        market: pick.market,
+        odds: pick.odds,
+        confidence: pick.confidence,
+        source: "api_sync",
+        admin_notes: `Auto-selected from bookmaker odds for API-Sports fixture #${fixture.fixture.id}.`,
+      });
     }
   }
 
-  const needed = CATEGORIES.filter((c) => counts[c] < TARGET_PER_CATEGORY);
-  if (needed.length === 0) return { inserted: 0, reason: "already covered for this date" };
-
-  const dateStr = targetDate.toISOString().slice(0, 10);
-  const fixtures = await getFixturesByDateRange(dateStr, dateStr);
-  const upcoming = sortFixturesByNotability(
-    fixtures.filter((f) => f.fixture.status.short === "NS")
-  ).slice(0, MAX_FIXTURE_SCAN);
-
-  const rows: PredictionInsert[] = [];
-
-  for (const fixture of upcoming) {
-    // Stop early if every category has reached the target
-    if (CATEGORIES.every((c) => (counts[c] + rows.filter((r) => categoryKey(r.prediction_type ?? "") === c).length) >= TARGET_PER_CATEGORY)) break;
-
-    const odds = (await getOdds(fixture.fixture.id)) as OddsResponse[] | null;
-    if (!odds?.length) continue;
-
-    const base = {
-      plan_id: plan.id,
-      home_team: fixture.teams.home.name,
-      away_team: fixture.teams.away.name,
-      league: fixture.league.name,
-      league_id: fixture.league.id,
-      external_fixture_id: fixture.fixture.id,
-      home_team_logo: fixture.teams.home.logo,
-      away_team_logo: fixture.teams.away.logo,
-      kickoff_time: fixture.fixture.date,
-      admin_notes: `Auto-synced from API-Sports fixture #${fixture.fixture.id}.`,
-    };
-
-    const rowsForFixture: PredictionInsert[] = [];
-
-    const alreadyFilled = (cat: Category, predType: string) => {
-      const key = `${fixture.fixture.id}:${predType.toLowerCase()}`;
-      if (existingPairs.has(key)) return true;
-      const added = rows.filter((r) => categoryKey(r.prediction_type ?? "") === cat).length;
-      return counts[cat] + added >= TARGET_PER_CATEGORY;
-    };
-
-    const tryAdd = (cat: Category, predType: string, odd: number | null, minOdd: number, maxOdd: number) => {
-      if (!odd || odd < minOdd || odd > maxOdd) return;
-      if (alreadyFilled(cat, predType)) return;
-      rowsForFixture.push({ ...base, prediction_type: predType, odds: odd, confidence: confidenceFromOdds(odd) });
-    };
-
-    const matchWinner = findBet(odds, "Match Winner");
-    tryAdd("home_win", "Home Win", valueOdd(matchWinner, "Home"), 1.3, 3.2);
-    tryAdd("away_win", "Away Win", valueOdd(matchWinner, "Away"), 1.3, 4.0);
-
-    const btts = findBet(odds, "Both Teams Score");
-    tryAdd("btts", "BTTS", valueOdd(btts, "Yes"), 1.3, 2.6);
-
-    const doubleChance = findBet(odds, "Double Chance");
-    const homeDraw = valueOdd(doubleChance, "Home/Draw");
-    const drawAway = valueOdd(doubleChance, "Draw/Away");
-    const [dcLabel, dcOdd] =
-      homeDraw && (!drawAway || homeDraw <= drawAway)
-        ? (["Double Chance 1X", homeDraw] as const)
-        : (["Double Chance X2", drawAway] as const);
-    tryAdd("double_chance", dcLabel, dcOdd, 1.1, 1.8);
-
-    const goals = findBet(odds, "Goals Over/Under");
-    tryAdd("over_1_5", "Over 1.5 Goals", valueOdd(goals, "Over 1.5"), 1.08, 1.8);
-    tryAdd("over_2_5", "Over 2.5 Goals", valueOdd(goals, "Over 2.5"), 1.3, 2.6);
-
-    rows.push(...rowsForFixture);
+  const inserted = await insertSkippingDuplicates(supabase, rows);
+  if (inserted.error) {
+    return { ...base, scanned, byMarket, status: "error", inserted: inserted.count, error: inserted.error };
   }
 
-  if (rows.length === 0) return { inserted: 0, reason: "no fixtures matched odds criteria" };
+  return {
+    date: dateKey,
+    status: stopReason ? "partial" : "ok",
+    inserted: inserted.count,
+    scanned,
+    byMarket,
+    ...(stopReason ? { error: stopReason } : {}),
+  };
+}
+
+/**
+ * Batch insert. If the batch hits the (fixture, market) unique index -- a
+ * concurrent run or a manual pick added meanwhile -- fall back to row-by-row
+ * inserts and skip the duplicates.
+ */
+async function insertSkippingDuplicates(
+  supabase: ReturnType<typeof createServiceClient>,
+  rows: PredictionInsert[]
+): Promise<{ count: number; error?: string }> {
+  if (rows.length === 0) return { count: 0 };
 
   const { error } = await supabase.from("predictions").insert(rows);
-  if (error) return { inserted: 0, reason: error.message };
+  if (!error) return { count: rows.length };
+  if (error.code !== "23505") return { count: 0, error: error.message };
 
-  return {
-    inserted: rows.length,
-    categories: Object.fromEntries(
-      CATEGORIES.map((c) => [c, rows.filter((r) => categoryKey(r.prediction_type ?? "") === c).length])
-    ),
-  };
+  let count = 0;
+  for (const row of rows) {
+    const { error: rowError } = await supabase.from("predictions").insert(row);
+    if (!rowError) count += 1;
+    else if (rowError.code !== "23505") return { count, error: rowError.message };
+  }
+  return { count };
 }

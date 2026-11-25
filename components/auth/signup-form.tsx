@@ -13,6 +13,19 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 
+/** Only same-site paths -- never an absolute or protocol-relative URL (open redirect). */
+function safeRedirect(target: string | null): string {
+  // Resolve like the browser would: "/\tevil.com" or "/%09/evil.com" pass a
+  // prefix check but resolve to another origin.
+  if (!target) return "/dashboard";
+  try {
+    const url = new URL(target, window.location.origin);
+    return url.origin === window.location.origin ? `${url.pathname}${url.search}${url.hash}` : "/dashboard";
+  } catch {
+    return "/dashboard";
+  }
+}
+
 const schema = z
   .object({
     fullName: z.string().min(2, "Enter your full name"),
@@ -59,7 +72,7 @@ export function SignupForm() {
     }
 
     toast.success("Account created!");
-    router.push(searchParams.get("redirect") ?? "/dashboard");
+    router.push(safeRedirect(searchParams.get("redirect")));
     router.refresh();
   }
 

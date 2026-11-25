@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import { sendMessage, markConversationRead } from "@/lib/actions/chat";
+import { sendMessage, markConversationRead } from "@/lib/actions/client";
 import type { Tables } from "@/types/database";
 
 export function ChatThread({
@@ -23,6 +23,8 @@ export function ChatThread({
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const addMessage = (message: Tables<"messages">) =>
+    setMessages((prev) => (prev.some((m) => m.id === message.id) ? prev : [...prev, message]));
 
   useEffect(() => {
     markConversationRead(conversationUserId);
@@ -35,7 +37,7 @@ export function ChatThread({
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages", filter: `user_id=eq.${conversationUserId}` },
-        (payload) => setMessages((prev) => [...prev, payload.new as Tables<"messages">])
+        (payload) => addMessage(payload.new as Tables<"messages">)
       )
       .subscribe();
 
@@ -52,7 +54,8 @@ export function ChatThread({
     if (!draft.trim()) return;
     setSending(true);
     try {
-      await sendMessage(conversationUserId, draft.trim());
+      // Shown straight away; the realtime echo of the same row is de-duplicated.
+      addMessage(await sendMessage(conversationUserId, draft.trim()));
       setDraft("");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to send");

@@ -1,137 +1,103 @@
-import { notFound } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
-import { format } from "date-fns";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
-import { Shield } from "lucide-react";
 import { getPredictionById } from "@/lib/data/predictions";
-import { getPlanById } from "@/lib/data/plans";
-import { getFixtureById, getH2H } from "@/lib/football-api";
-import { cn } from "@/lib/utils";
-import { ConfidenceRing } from "@/components/predictions/confidence-ring";
-import { Badge } from "@/components/ui/badge";
+import { formatKickoffFull } from "@/lib/utils/date";
+import { pageMetadata } from "@/lib/seo";
+import { marketOf } from "@/lib/predictions/markets";
+import { marketPageForMarket } from "@/lib/seo/market-pages";
+import { Breadcrumbs } from "@/components/site/breadcrumbs";
+import { PlainContent } from "@/components/content/plain-content";
+import { ResultBadge } from "@/components/predictions/prediction-list";
+import { ResponsibleNotice } from "@/components/site/responsible-notice";
 
-const STATUS_LABEL = { not_started: "Not Started", live: "Live", finished: "Finished" } as const;
+type Props = { params: Promise<{ id: string }> };
 
-const RESULT_STYLES = {
-  win: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-  loss: "bg-red-500/15 text-red-600 dark:text-red-400",
-  push: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-  pending: "bg-secondary text-secondary-foreground",
-} as const;
+export const revalidate = 300;
 
-const RESULT_LABEL = { win: "Win", loss: "Loss", push: "Push", pending: "Pending" } as const;
-
-function TeamCrest({ logo, name }: { logo: string | null; name: string }) {
-  return (
-    <div className="flex flex-col items-center gap-2 text-center">
-      {logo ? (
-        <Image src={logo} alt={name} width={56} height={56} className="size-14 object-contain" />
-      ) : (
-        <span className="flex size-14 items-center justify-center rounded-full bg-secondary">
-          <Shield className="size-7 text-muted-foreground/50" />
-        </span>
-      )}
-      <p className="max-w-[9rem] text-sm font-semibold">{name}</p>
-    </div>
-  );
+/** Render each URL on first visit, then serve it from the ISR cache. */
+export async function generateStaticParams() {
+  return [];
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
-  const { id } = await params;
-  const prediction = await getPredictionById(id);
-  if (!prediction) return {};
-  return { title: `${prediction.home_team} vs ${prediction.away_team} Prediction` };
-}
+// Predictions linked to an API fixture live on the match page, which is the
+// single canonical URL for that fixture -- this route only redirects there.
+// Manual picks without a fixture get a minimal, noindex page.
 
-export default async function PredictionDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const prediction = await getPredictionById(id);
   if (!prediction) notFound();
+  if (prediction.external_fixture_id) permanentRedirect(`/match/${prediction.external_fixture_id}`);
 
-  const [plan, fixture] = await Promise.all([
-    getPlanById(prediction.plan_id),
-    prediction.external_fixture_id ? getFixtureById(prediction.external_fixture_id) : Promise.resolve(null),
-  ]);
+  return pageMetadata({
+    title: `${prediction.home_team} vs ${prediction.away_team} Prediction`,
+    description: `${prediction.prediction_type} prediction for ${prediction.home_team} vs ${prediction.away_team}${prediction.league ? ` (${prediction.league})` : ""}.`,
+    path: `/predictions/${id}`,
+    noIndex: true,
+  });
+}
 
-  const h2h = fixture ? await getH2H(fixture.teams.home.id, fixture.teams.away.id) : [];
+export default async function PredictionDetailPage({ params }: Props) {
+  const { id } = await params;
+  const prediction = await getPredictionById(id);
+  if (!prediction) notFound();
+  if (prediction.external_fixture_id) permanentRedirect(`/match/${prediction.external_fixture_id}`);
+
+  const market = marketOf(prediction);
+  const marketPage = market ? marketPageForMarket(market) : undefined;
+  const hasScore = prediction.home_score !== null && prediction.away_score !== null;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
-      {plan && (
-        <Link href={`/dashboard/vip/${plan.slug}`} className="text-sm text-brand hover:underline">
-          ← Back to {plan.name}
-        </Link>
-      )}
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+      <Breadcrumbs items={[{ name: "Predictions", path: "/predictions" }, { name: `${prediction.home_team} vs ${prediction.away_team}`, path: `/predictions/${id}` }]} />
+      <h1 className="mt-4 text-2xl font-extrabold tracking-tight">
+        {prediction.home_team} vs {prediction.away_team} Prediction
+      </h1>
+      <p className="mt-2 text-sm text-muted-foreground">
+        {prediction.league ? `${prediction.league} · ` : ""}
+        <time dateTime={prediction.kickoff_time}>{formatKickoffFull(prediction.kickoff_time)}</time>
+      </p>
 
-      <div className="mt-4 rounded-2xl border border-border bg-card p-6">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
-          <span>{prediction.league ?? "Football"}</span>
-          <span>{format(new Date(prediction.kickoff_time), "EEEE, d MMM yyyy 'at' HH:mm")}</span>
+      <dl className="mt-6 grid grid-cols-2 gap-4 rounded-2xl border border-border bg-card p-5 sm:grid-cols-4">
+        <div>
+          <dt className="text-xs text-muted-foreground">Our pick</dt>
+          <dd className="font-semibold">{prediction.original_prediction_type}</dd>
         </div>
-
-        <div className="mt-6 flex items-center justify-center gap-6 sm:gap-12">
-          <TeamCrest logo={prediction.home_team_logo} name={prediction.home_team} />
-          <div className="text-center">
-            {prediction.home_score !== null && prediction.away_score !== null ? (
-              <p className="text-3xl font-extrabold">
-                {prediction.home_score} - {prediction.away_score}
-              </p>
-            ) : (
-              <p className="text-xl font-bold text-muted-foreground">vs</p>
-            )}
-            <Badge
-              variant={prediction.status === "live" ? "default" : "secondary"}
-              className={cn("mt-2", prediction.status === "live" && "bg-brand text-brand-foreground")}
-            >
-              {STATUS_LABEL[prediction.status]}
-            </Badge>
-          </div>
-          <TeamCrest logo={prediction.away_team_logo} name={prediction.away_team} />
+        <div>
+          <dt className="text-xs text-muted-foreground">Odds</dt>
+          <dd className="font-semibold">{prediction.original_odds !== null ? Number(prediction.original_odds).toFixed(2) : "—"}</dd>
         </div>
-
-        <div className="mt-8 grid grid-cols-2 gap-4 rounded-xl bg-secondary/50 p-4 sm:grid-cols-4">
-          <div>
-            <p className="text-xs text-muted-foreground">Our Pick</p>
-            <p className="text-sm font-semibold">{prediction.prediction_type}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Odds</p>
-            <p className="text-sm font-semibold">{prediction.odds ?? "—"}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Confidence</p>
-            <ConfidenceRing value={prediction.confidence} />
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Result</p>
-            <span className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold", RESULT_STYLES[prediction.result])}>
-              {RESULT_LABEL[prediction.result]}
-            </span>
-          </div>
+        <div>
+          <dt className="text-xs text-muted-foreground">Confidence</dt>
+          <dd className="font-semibold">{prediction.confidence !== null ? `${prediction.confidence}%` : "—"}</dd>
         </div>
+        <div>
+          <dt className="text-xs text-muted-foreground">Result</dt>
+          <dd>
+            {hasScore && <span className="mr-2 font-semibold">{prediction.home_score}–{prediction.away_score}</span>}
+            <ResultBadge result={prediction.result} verified={prediction.result_approved} />
+          </dd>
+        </div>
+      </dl>
 
-        {prediction.admin_notes && (
-          <p className="mt-4 text-sm text-muted-foreground">{prediction.admin_notes}</p>
-        )}
-      </div>
-
-      {fixture && (
-        <section className="mt-8">
-          <h2 className="font-bold">Head to Head</h2>
-          <div className="mt-3 space-y-2">
-            {h2h.slice(0, 5).map((match) => (
-              <div key={match.fixture.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-3 text-sm">
-                <span>
-                  {match.teams.home.name} {match.goals.home ?? "-"} : {match.goals.away ?? "-"} {match.teams.away.name}
-                </span>
-                <span className="text-muted-foreground">{format(new Date(match.fixture.date), "d MMM yyyy")}</span>
-              </div>
-            ))}
-            {h2h.length === 0 && <p className="text-sm text-muted-foreground">No previous meetings on record.</p>}
-          </div>
+      {prediction.analysis && (
+        <section className="mt-6">
+          <h2 className="font-bold">Why we picked it</h2>
+          <PlainContent text={prediction.analysis} className="mt-2 text-muted-foreground" />
         </section>
       )}
+
+      {marketPage && (
+        <p className="mt-6 text-sm">
+          More picks in this market:{" "}
+          <Link href={`/tips/${marketPage.slug}`} className="font-medium text-brand hover:underline">
+            {marketPage.h1}
+          </Link>
+        </p>
+      )}
+
+      <ResponsibleNotice className="mt-8" />
     </div>
   );
 }

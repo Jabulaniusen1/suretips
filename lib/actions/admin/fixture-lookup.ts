@@ -1,7 +1,10 @@
 "use server";
 
+import { toActionResult } from "@/lib/actions/result";
 import { requireAdmin } from "@/lib/data/admin";
-import { getFixturesByDateRange, getOdds } from "@/lib/football-api";
+import { getFixturesByDate, getOdds } from "@/lib/football-api";
+import { parseDateKey } from "@/lib/utils/date";
+import { mergeBookmakerBets } from "@/lib/predictions/pick-selection";
 
 export interface FixtureOption {
   fixtureId: number;
@@ -14,11 +17,14 @@ export interface FixtureOption {
   kickoffTime: string;
 }
 
-export async function searchFixturesForDate(date: string): Promise<FixtureOption[]> {
+async function searchFixturesForDateImpl(date: string): Promise<FixtureOption[]> {
   const admin = await requireAdmin();
   if (!admin) throw new Error("Forbidden");
 
-  const fixtures = await getFixturesByDateRange(date, date);
+  const dateKey = parseDateKey(date);
+  if (!dateKey) throw new Error("Invalid date");
+  // Throws on API failure, so the form shows an error instead of "0 fixtures".
+  const fixtures = await getFixturesByDate(dateKey);
 
   return fixtures
     .map((f) => ({
@@ -40,18 +46,6 @@ export interface PickOption {
   odds: number | null;
 }
 
-interface OddsBetValue {
-  value: string;
-  odd: string;
-}
-interface OddsBet {
-  name: string;
-  values: OddsBetValue[];
-}
-interface OddsResponse {
-  bookmakers: Array<{ bets: OddsBet[] }>;
-}
-
 const GOAL_LINES = ["0.5", "1.5", "2.5", "3.5"];
 const DOUBLE_CHANCE: Array<[string, string]> = [
   ["Home/Draw", "Double Chance 1X"],
@@ -59,12 +53,13 @@ const DOUBLE_CHANCE: Array<[string, string]> = [
   ["Home/Away", "Double Chance 12"],
 ];
 
-export async function getFixturePickOptions(fixtureId: number): Promise<PickOption[]> {
+async function getFixturePickOptionsImpl(fixtureId: number): Promise<PickOption[]> {
   const admin = await requireAdmin();
   if (!admin) throw new Error("Forbidden");
 
-  const odds = (await getOdds(fixtureId)) as OddsResponse[] | null;
-  const bets = odds?.[0]?.bookmakers?.[0]?.bets ?? [];
+  if (!Number.isInteger(fixtureId) || fixtureId <= 0) throw new Error("Invalid fixture");
+  const odds = await getOdds(fixtureId);
+  const bets = mergeBookmakerBets(odds[0]?.bookmakers ?? [], Number(process.env.API_FOOTBALL_BOOKMAKER_ID) || null);
   const options: PickOption[] = [];
 
   const matchWinner = bets.find((b) => b.name === "Match Winner");
@@ -82,7 +77,7 @@ export async function getFixturePickOptions(fixtureId: number): Promise<PickOpti
 
   const btts = bets.find((b) => b.name === "Both Teams Score");
   const bttsYes = btts?.values.find((x) => x.value === "Yes");
-  if (bttsYes) options.push({ label: `BTTS - Yes (${bttsYes.odd})`, predictionType: "BTTS", odds: Number(bttsYes.odd) });
+  if (bttsYes) options.push({ label: `BTTS - Yes (${bttsYes.odd})`, predictionType: "BTTS Yes", odds: Number(bttsYes.odd) });
   const bttsNo = btts?.values.find((x) => x.value === "No");
   if (bttsNo) options.push({ label: `BTTS - No (${bttsNo.odd})`, predictionType: "BTTS No", odds: Number(bttsNo.odd) });
 
@@ -94,11 +89,20 @@ export async function getFixturePickOptions(fixtureId: number): Promise<PickOpti
     if (under) options.push({ label: `Under ${line} Goals (${under.odd})`, predictionType: `Under ${line} Goals`, odds: Number(under.odd) });
   }
 
-  const exactScore = bets.find((b) => b.name === "Exact Score");
-  for (const v of exactScore?.values.slice(0, 14) ?? []) {
-    const scoreline = String(v.value).replace(":", "-");
-    options.push({ label: `Correct Score ${scoreline} (${v.odd})`, predictionType: scoreline, odds: Number(v.odd) });
-  }
+  // DISABLED (correct score): exact score options are switched off for now.
+  // const exactScore = bets.find((b) => b.name === "Exact Score");
+  // for (const v of exactScore?.values.slice(0, 14) ?? []) {
+  //   const scoreline = String(v.value).replace(":", "-");
+  //   options.push({ label: `Correct Score ${scoreline} (${v.odd})`, predictionType: scoreline, odds: Number(v.odd) });
+  // }
 
   return options;
+}
+
+// Exported actions return { ok, data | error } -- see lib/actions/result.ts.
+export async function searchFixturesForDate(...args: Parameters<typeof searchFixturesForDateImpl>) {
+  return toActionResult(() => searchFixturesForDateImpl(...args));
+}
+export async function getFixturePickOptions(...args: Parameters<typeof getFixturePickOptionsImpl>) {
+  return toActionResult(() => getFixturePickOptionsImpl(...args));
 }

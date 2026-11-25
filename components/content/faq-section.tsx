@@ -1,0 +1,27 @@
+import { JsonLd } from "@/components/seo/json-ld";
+import { faqJsonLd } from "@/lib/seo";
+import type { FaqItem } from "@/types/database";
+
+/** Visible FAQ with matching FAQPage structured data (same questions, same answers). */
+export function FaqSection({ items, heading = "Frequently asked questions" }: { items: FaqItem[]; heading?: string }) {
+  const valid = items.filter((i) => i.question?.trim() && i.answer?.trim());
+  if (valid.length === 0) return null;
+  return (
+    <section aria-labelledby="faq" className="mt-10">
+      <h2 id="faq" className="text-lg font-bold">
+        {heading}
+      </h2>
+      <div className="mt-4 divide-y divide-border rounded-2xl border border-border bg-card">
+        {valid.map((item) => (
+          <details key={item.question} className="group p-4 [&_summary::-webkit-details-marker]:hidden" open>
+            <summary className="cursor-pointer list-none font-medium">
+              <h3 className="inline">{item.question}</h3>
+            </summary>
+            <p className="mt-2 text-sm text-muted-foreground">{item.answer}</p>
+          </details>
+        ))}
+      </div>
+      <JsonLd data={faqJsonLd(valid)} />
+    </section>
+  );
+}

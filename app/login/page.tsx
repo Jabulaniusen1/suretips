@@ -3,11 +3,11 @@ import { Suspense } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { LoginForm } from "@/components/auth/login-form";
 
-export const metadata: Metadata = { title: "Log In" };
+export const metadata: Metadata = { title: "Admin log in", robots: { index: false, follow: false } };
 
 export default function LoginPage() {
   return (
-    <AuthShell title="Welcome back" description="Log in to access your protected dashboard.">
+    <AuthShell title="Admin log in" description="Sign in to manage SureMatchContact.">
       <Suspense>
         <LoginForm />
       </Suspense>

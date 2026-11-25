@@ -9,7 +9,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/lib/supabase/client";
-import { updateProfile } from "@/lib/actions/settings";
+import { updateProfile } from "@/lib/actions/client";
 import { COUNTRIES } from "@/lib/constants";
 import type { Tables } from "@/types/database";
 
@@ -22,8 +22,12 @@ export function SettingsForm({ profile }: { profile: Tables<"users"> }) {
   const [savingPassword, setSavingPassword] = useState(false);
 
   async function handleAvatarUpload(file: File) {
+    if (!/^image\/(png|jpe?g|webp|gif)$/.test(file.type) || file.size > 2 * 1024 * 1024) {
+      return toast.error("Choose a PNG, JPG, WebP or GIF image of 2 MB or less.");
+    }
     const supabase = createClient();
-    const path = `${profile.id}/${Date.now()}-${file.name}`;
+    // Never put the original file name in the storage path.
+    const path = `${profile.id}/${Date.now()}.${file.type.split("/")[1].replace("jpeg", "jpg")}`;
     const { error } = await supabase.storage.from("avatars").upload(path, file);
     if (error) return toast.error(error.message);
     const { data } = supabase.storage.from("avatars").getPublicUrl(path);

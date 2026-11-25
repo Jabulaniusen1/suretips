@@ -20,7 +20,10 @@ export async function getAdminConversations(): Promise<ConversationSummary[]> {
   const supabase = await createClient();
   const { data: messages } = await supabase
     .from("messages")
-    .select("*, users(full_name, email)")
+    // messages has two foreign keys to users (user_id, sender_id); PostgREST
+    // rejects an unqualified `users(...)` embed as ambiguous (PGRST201), which
+    // left the admin inbox empty. Embed the conversation owner explicitly.
+    .select("*, users!messages_user_id_fkey(full_name, email)")
     .order("created_at", { ascending: false });
 
   const byUser = new Map<string, ConversationSummary>();

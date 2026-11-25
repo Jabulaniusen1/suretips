@@ -1,22 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { StandingRow } from "@/lib/football-api";
 
 export function LeagueStandingsTabs({
   leagues,
 }: {
-  leagues: { id: number; name: string; standings: StandingRow[] | null }[];
+  leagues: { id: number; name: string; slug: string; standings: StandingRow[] | null }[];
 }) {
   const withData = leagues.filter((l) => l.standings && l.standings.length > 0);
 
-  if (withData.length === 0) {
-    return (
-      <p className="rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-        League tables will appear here once the API-Sports key is configured.
-      </p>
-    );
-  }
+  if (withData.length === 0) return null;
 
   return (
     <Tabs defaultValue={String(withData[0].id)}>
@@ -61,6 +56,9 @@ export function LeagueStandingsTabs({
               </tbody>
             </table>
           </div>
+          <Link href={`/competitions/${league.slug}`} className="mt-2 inline-block text-sm font-medium text-brand hover:underline">
+            {league.name} predictions and full table →
+          </Link>
         </TabsContent>
       ))}
     </Tabs>

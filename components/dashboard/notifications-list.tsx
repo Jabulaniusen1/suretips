@@ -5,7 +5,7 @@ import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatShortDate } from "@/lib/utils/date";
-import { markNotificationRead, markAllNotificationsRead } from "@/lib/actions/notifications";
+import { markNotificationRead, markAllNotificationsRead } from "@/lib/actions/client";
 import type { Tables } from "@/types/database";
 
 export function NotificationsList({ notifications, userId }: { notifications: Tables<"notifications">[]; userId: string }) {

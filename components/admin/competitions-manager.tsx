@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CompetitionForm } from "@/components/admin/competition-form";
-import { deleteCompetition } from "@/lib/actions/admin/competitions";
+import { deleteCompetition } from "@/lib/actions/client";
 import type { Tables } from "@/types/database";
 
 export function CompetitionsManager({ competitions }: { competitions: Tables<"competitions">[] }) {
@@ -56,7 +56,7 @@ export function CompetitionsManager({ competitions }: { competitions: Tables<"co
       </div>
 
       <Dialog open={adding} onOpenChange={setAdding}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Add Competition</DialogTitle>
           </DialogHeader>
@@ -65,7 +65,7 @@ export function CompetitionsManager({ competitions }: { competitions: Tables<"co
       </Dialog>
 
       <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Edit Competition</DialogTitle>
           </DialogHeader>

@@ -2,7 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/types/database";
 
-const PROTECTED_DASHBOARD_PREFIX = "/dashboard";
+// User accounts are turned off; the user dashboard is disabled (app/_dashboard).
+// const PROTECTED_DASHBOARD_PREFIX = "/dashboard";
 const PROTECTED_ADMIN_PREFIX = "/admin";
 
 export async function updateSession(request: NextRequest) {
@@ -42,19 +43,22 @@ export async function updateSession(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
+    // Signed in but not an admin: there is no user dashboard to send them to.
     if (!profile?.is_admin) {
       const url = request.nextUrl.clone();
-      url.pathname = "/dashboard";
+      url.pathname = "/";
+      url.search = "";
       return NextResponse.redirect(url);
     }
   }
 
-  if (pathname.startsWith(PROTECTED_DASHBOARD_PREFIX) && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(url);
-  }
+  // User dashboard disabled (accounts are turned off).
+  // if (pathname.startsWith(PROTECTED_DASHBOARD_PREFIX) && !user) {
+  //   const url = request.nextUrl.clone();
+  //   url.pathname = "/login";
+  //   url.searchParams.set("redirect", pathname);
+  //   return NextResponse.redirect(url);
+  // }
 
   return supabaseResponse;
 }

@@ -1,99 +1,74 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getAdminKpis } from "@/lib/data/admin-kpis";
-import { formatPrice } from "@/lib/utils/currency";
-import { formatShortDate } from "@/lib/utils/date";
-import { Badge } from "@/components/ui/badge";
+import { getResultWindows } from "@/lib/data/results";
+import { formatWinRate } from "@/lib/predictions/stats";
+import { RunSyncButton } from "@/components/admin/run-sync-button";
 
-export const metadata: Metadata = { title: "Admin Dashboard" };
+export const metadata: Metadata = { title: "Dashboard" };
 
 export default async function AdminDashboardPage() {
-  const kpis = await getAdminKpis();
+  const [kpis, windows] = await Promise.all([getAdminKpis(), getResultWindows()]);
 
-  const cards = [
-    { label: "Active Subscribers", value: kpis.activeSubscribers },
-    { label: "Revenue Today", value: formatPrice(kpis.revenueToday, "NGN") },
-    { label: "Revenue (7d)", value: formatPrice(kpis.revenue7d, "NGN") },
-    { label: "Revenue (30d)", value: formatPrice(kpis.revenue30d, "NGN") },
-    { label: "Pending Activations", value: kpis.pendingActivations },
-    { label: "New Signups (24h)", value: kpis.newSignups24h },
-    { label: "New Signups (7d)", value: kpis.newSignups7d },
+  const cards: Array<{ label: string; value: string | number; href: string; alert?: boolean }> = [
+    // The admin Predictions and Results pages are hidden, so these open the public pages.
+    { label: "Predictions today", value: kpis.predictionsToday, href: "/" },
+    { label: "Predictions tomorrow", value: kpis.predictionsTomorrow, href: "/predictions" },
+    // Results are graded and approved automatically (lib/predictions/update-scores.ts).
+    // { label: "Results awaiting approval", value: kpis.awaitingVerification, href: "/admin/results", alert: kpis.awaitingVerification > 0 },
+    // { label: "Need manual grading", value: kpis.needsGrading, href: "/admin/results?view=ungraded", alert: kpis.needsGrading > 0 },
+    { label: "Verified win rate (30d)", value: formatWinRate(windows.last30?.winRate ?? null), href: "/previous-results" },
+    { label: "Settled results (30d)", value: windows.last30?.settled ?? "—", href: "/previous-results" },
+    { label: "Published articles", value: kpis.publishedPosts, href: "/admin/blog" },
+    // User accounts are turned off.
+    // { label: "New accounts (7d)", value: kpis.newUsers7d, href: "/admin/users" },
   ];
 
   return (
     <div>
-      <h1 className="text-xl font-bold">Admin Dashboard</h1>
-      <div className="mt-4 grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      <h1 className="text-xl font-bold">Dashboard</h1>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => (
-          <div key={card.label} className="rounded-2xl border border-border bg-card p-4">
+          <Link
+            key={card.label}
+            href={card.href}
+            className={`rounded-2xl border bg-card p-4 transition-colors hover:border-brand ${card.alert ? "border-brand/60" : "border-border"}`}
+          >
             <p className="text-xs text-muted-foreground">{card.label}</p>
-            <p className="mt-1 text-2xl font-bold">{card.value}</p>
-          </div>
+            <p className="mt-1 text-2xl font-bold tabular-nums">{card.value}</p>
+          </Link>
         ))}
       </div>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Predictions and Results admin pages are hidden from the sidebar.
         <Link href="/admin/predictions/add" className="rounded-xl border border-border bg-card p-4 text-sm font-medium hover:border-brand">
-          + Add Prediction
+          + Add prediction
         </Link>
-        <Link href="/admin/payment-methods" className="rounded-xl border border-border bg-card p-4 text-sm font-medium hover:border-brand">
-          + Add Payment Method
+        <Link href="/admin/results" className="rounded-xl border border-border bg-card p-4 text-sm font-medium hover:border-brand">
+          Review results
+        </Link>
+        */}
+        <Link href="/admin/blog/write" className="rounded-xl border border-border bg-card p-4 text-sm font-medium hover:border-brand">
+          + Write article
         </Link>
         <Link href="/admin/pages" className="rounded-xl border border-border bg-card p-4 text-sm font-medium hover:border-brand">
-          + Publish SEO Page
-        </Link>
-        <Link href="/admin/transactions" className="rounded-xl border border-border bg-card p-4 text-sm font-medium hover:border-brand">
-          Review Transactions
+          + SEO landing page
         </Link>
       </div>
 
-      <div className="mt-8">
-        <h2 className="font-bold">Recent Transactions</h2>
-        <div className="mt-3 overflow-x-auto rounded-2xl border border-border bg-card">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">
-                <th className="px-4 py-2">Date</th>
-                <th className="px-4 py-2">User</th>
-                <th className="px-4 py-2">Plan</th>
-                <th className="px-4 py-2">Amount</th>
-                <th className="px-4 py-2">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {kpis.recentTransactions.map((tx) => {
-                const row = tx as unknown as {
-                  id: string;
-                  created_at: string;
-                  amount: number;
-                  currency: string;
-                  status: string;
-                  users: { full_name: string | null; email: string } | null;
-                  plans: { name: string } | null;
-                };
-                return (
-                  <tr key={row.id}>
-                    <td className="px-4 py-2 text-muted-foreground">{formatShortDate(row.created_at)}</td>
-                    <td className="px-4 py-2">{row.users?.full_name ?? row.users?.email}</td>
-                    <td className="px-4 py-2">{row.plans?.name}</td>
-                    <td className="px-4 py-2">{formatPrice(row.amount, row.currency)}</td>
-                    <td className="px-4 py-2">
-                      <Badge variant={row.status === "completed" ? "default" : "secondary"}>{row.status}</Badge>
-                    </td>
-                  </tr>
-                );
-              })}
-              {kpis.recentTransactions.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">
-                    No transactions yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      <section className="mt-8 max-w-2xl rounded-2xl border border-border bg-card p-5">
+        <h2 className="font-bold">Automatic sync</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Runs automatically every 4 hours (Vercel Cron). Fills each market up to 10 picks for today, tomorrow and the day after
+          using bookmaker odds; never edits or deletes existing predictions. Scores update every 15 minutes, and finished matches
+          are graded and approved automatically.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <RunSyncButton job="sync" />
+          <RunSyncButton job="scores" />
         </div>
-      </div>
+      </section>
     </div>
   );
 }

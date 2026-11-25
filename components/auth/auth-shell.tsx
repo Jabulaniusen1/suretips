@@ -21,13 +21,13 @@ export function AuthShell({
           }}
         />
         <div className="relative">
-          <Logo dark imgClassName="h-12 w-auto" />
+          <Logo dark imgClassName="h-16 w-auto" />
         </div>
         <div className="relative max-w-sm">
-          <p className="text-sm font-semibold uppercase tracking-widest text-brand">Proof Before Promises</p>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight">Your VIP picks, all in one place.</h2>
+          <p className="text-sm font-semibold uppercase tracking-widest text-brand">Free football predictions</p>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight">Every tip is free. Every result stays on the record.</h2>
           <p className="mt-3 text-zinc-300">
-            Log in to track your active packages, today&apos;s predictions, and your full winnings history.
+            An account is optional. It lets you message our support team and manage your notifications.
           </p>
         </div>
         <div className="relative flex flex-wrap gap-6 text-sm text-zinc-400">
@@ -43,7 +43,7 @@ export function AuthShell({
       <div className="flex flex-1 items-center justify-center bg-secondary px-4 py-12">
         <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
           <div className="flex justify-center lg:hidden">
-            <Logo imgClassName="h-16 w-auto" />
+            <Logo imgClassName="h-20 w-auto" />
           </div>
           <h1 className="mt-6 text-center text-2xl font-bold lg:mt-0 lg:text-left">{title}</h1>
           <p className="mt-1 text-center text-sm text-muted-foreground lg:text-left">{description}</p>
