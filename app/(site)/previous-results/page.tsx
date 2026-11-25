@@ -35,7 +35,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
   return pageMetadata({
     title: "Previous Results – Verified Football Prediction Record",
     description:
-      "Every free prediction SureMatchContact has published and how it settled — wins, losses and void bets — with win rates for the last 7 days, 30 days and all time.",
+      "Every free prediction Sure Match Tips has published and how it settled — wins, losses and void bets — with win rates for the last 7 days, 30 days and all time.",
     path: "/previous-results",
     // Filtered and paginated views are useful to visitors but are not separate pages for search.
     noIndex: filtered,

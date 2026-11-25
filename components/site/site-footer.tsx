@@ -139,7 +139,7 @@ export async function SiteFooter() {
             </li>
           </FooterColumn>
 
-          <FooterColumn title="SureMatchContact">
+          <FooterColumn title="Sure Match Tips">
             {TRUST_LINKS.map((link) => (
               <li key={link.href}>
                 <Link href={link.href} className="hover:text-brand">
@@ -180,7 +180,7 @@ export async function SiteFooter() {
             </li>
             */}
           </ul>
-          <p className="text-zinc-500">© {new Date().getFullYear()} SureMatchContact</p>
+          <p className="text-zinc-500">© {new Date().getFullYear()} Sure Match Tips</p>
         </div>
       </div>
     </footer>

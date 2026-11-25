@@ -5,16 +5,16 @@ import { LegalPage } from "@/components/site/legal-page";
 
 export const metadata: Metadata = pageMetadata({
   title: "Terms of Use",
-  description: "The terms that apply when you use SureMatchContact, a free football predictions and information website.",
+  description: "The terms that apply when you use Sure Match Tips, a free football predictions and information website.",
   path: "/terms",
 });
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Terms of Use" path="/terms" updated="2026-11-25" intro="By using SureMatchContact you agree to these terms. Please read them alongside our Privacy Policy and Disclaimer.">
+    <LegalPage title="Terms of Use" path="/terms" updated="2026-11-25" intro="By using Sure Match Tips you agree to these terms. Please read them alongside our Privacy Policy and Disclaimer.">
       <h2>1. The service</h2>
       <p>
-        SureMatchContact provides free football predictions, statistics and related articles for information and entertainment.
+        Sure Match Tips provides free football predictions, statistics and related articles for information and entertainment.
         We are not a bookmaker, we do not accept bets, and nothing on the site is financial or betting advice.
       </p>
       <h2>2. Eligibility</h2>
@@ -35,7 +35,7 @@ export default function TermsPage() {
       <p>Do not misuse the site: no scraping that degrades the service, attempts to access restricted areas, or unlawful activity.</p>
       <h2>7. Intellectual property</h2>
       <p>
-        Content written by SureMatchContact is ours. You may quote small extracts with a link back. Team names, crests and
+        Content written by Sure Match Tips is ours. You may quote small extracts with a link back. Team names, crests and
         competition marks belong to their respective owners.
       </p>
       <h2>8. Third-party links and advertising</h2>
@@ -45,7 +45,7 @@ export default function TermsPage() {
       </p>
       <h2>9. Liability</h2>
       <p>
-        To the extent permitted by law, SureMatchContact is not liable for any loss arising from the use of the site or reliance
+        To the extent permitted by law, Sure Match Tips is not liable for any loss arising from the use of the site or reliance
         on its content, including betting losses.
       </p>
       <h2>10. Changes</h2>

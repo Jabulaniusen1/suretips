@@ -4,7 +4,7 @@ import { LegalPage } from "@/components/site/legal-page";
 
 export const metadata: Metadata = pageMetadata({
   title: "Cookie Policy",
-  description: "Which cookies and similar technologies SureMatchContact uses and how to control them.",
+  description: "Which cookies and similar technologies Sure Match Tips uses and how to control them.",
   path: "/cookies",
 });
 

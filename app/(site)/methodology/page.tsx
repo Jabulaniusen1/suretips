@@ -8,7 +8,7 @@ import { MARKET_LABELS, type MarketKey } from "@/lib/predictions/markets";
 export const metadata: Metadata = pageMetadata({
   title: "How Our Football Predictions Work – Methodology",
   description:
-    "How SureMatchContact selects football predictions, what confidence ratings mean, how odds are shown, how results are verified and how win rates are calculated.",
+    "How Sure Match Tips selects football predictions, what confidence ratings mean, how odds are shown, how results are verified and how win rates are calculated.",
   path: "/methodology",
 });
 
@@ -20,7 +20,7 @@ export default function MethodologyPage() {
       title="How Our Predictions Work"
       path="/methodology"
       updated="2026-11-25"
-      intro="This page explains exactly how predictions on SureMatchContact are produced, what the numbers next to them mean, and how we keep score. If anything here and the site disagree, tell us."
+      intro="This page explains exactly how predictions on Sure Match Tips are produced, what the numbers next to them mean, and how we keep score. If anything here and the site disagree, tell us."
     >
       <h2 id="sources">Two kinds of prediction</h2>
       <p>Every prediction is labelled internally by where it came from:</p>

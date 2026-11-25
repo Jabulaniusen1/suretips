@@ -42,7 +42,7 @@ export default async function TipsHubPage() {
 
       <h1 className="mt-4 text-2xl font-extrabold tracking-tight sm:text-3xl">Football Betting Tips by Market</h1>
       <p className="mt-3 max-w-3xl text-muted-foreground">
-        Every free prediction on SureMatchContact belongs to a betting market. Choose a market to see today&apos;s picks, how they
+        Every free prediction on Sure Match Tips belongs to a betting market. Choose a market to see today&apos;s picks, how they
         are selected, what to consider before betting, and how that market&apos;s published tips have performed. For every market
         at once, see <Link href="/" className="font-medium text-brand hover:underline">today&apos;s football predictions</Link>.
       </p>

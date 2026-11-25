@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Admin log in", robots: { index: fals
 
 export default function LoginPage() {
   return (
-    <AuthShell title="Admin log in" description="Sign in to manage SureMatchContact.">
+    <AuthShell title="Admin log in" description="Sign in to manage Sure Match Tips.">
       <Suspense>
         <LoginForm />
       </Suspense>

@@ -1,5 +1,5 @@
 -- ============================================================================
--- Kingpredicts / SureMatchContact: complete database schema.
+-- Kingpredicts / Sure Match Tips: complete database schema.
 --
 -- Squashed baseline. It replaces the 21 incremental migrations from
 -- 2026-06-29 to 2026-11-25 and drops everything from the old subscription
@@ -621,7 +621,7 @@ grant update (read) on public.notifications to authenticated;
 -- Empty strings hide the matching links in the UI until an admin sets real
 -- values in /admin/config.
 insert into public.site_config (key, value) values
-  ('hero', '{"headline": "SureMatchContact", "subtext": "Free football predictions, daily betting tips, match previews, and transparent historical results.", "primary_cta_label": "View Today''s Tips", "secondary_cta_label": "Join Telegram"}'),
+  ('hero', '{"headline": "Sure Match Tips", "subtext": "Free football predictions, daily betting tips, match previews, and transparent historical results.", "primary_cta_label": "View Today''s Tips", "secondary_cta_label": "Join Telegram"}'),
   ('telegram_url', '""'),
   ('whatsapp_number', '""'),
   ('contact_email', '""'),

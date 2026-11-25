@@ -24,7 +24,7 @@ export function Logo({
   const logo = (src: string, extraClassName?: string) => (
     <Image
       src={src}
-      alt="SureMatchContact"
+      alt="Sure Match Tips"
       width={LOGO_WIDTH}
       height={LOGO_HEIGHT}
       className={cn(imgClassName, extraClassName)}
@@ -33,7 +33,7 @@ export function Logo({
   );
 
   return (
-    <Link href={href} className={cn("flex items-center", className)} aria-label={href === "/" ? "SureMatchContact home" : "SureMatchContact"}>
+    <Link href={href} className={cn("flex items-center", className)} aria-label={href === "/" ? "Sure Match Tips home" : "Sure Match Tips"}>
       {/* Navy wordmark on light backgrounds, white wordmark in dark mode and on dark surfaces. */}
       {dark ? (
         logo("/logo-on-dark.png")

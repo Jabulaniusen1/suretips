@@ -5,7 +5,7 @@ import { LegalPage } from "@/components/site/legal-page";
 
 export const metadata: Metadata = pageMetadata({
   title: "Disclaimer",
-  description: "SureMatchContact predictions are information, not advice. Football outcomes are uncertain and past results do not guarantee future results.",
+  description: "Sure Match Tips predictions are information, not advice. Football outcomes are uncertain and past results do not guarantee future results.",
   path: "/disclaimer",
 });
 
@@ -13,7 +13,7 @@ export default function DisclaimerPage() {
   return (
     <LegalPage title="Disclaimer" path="/disclaimer" updated="2026-11-19">
       <p>
-        SureMatchContact publishes football predictions for information and entertainment only. We are not a bookmaker, and nothing
+        Sure Match Tips publishes football predictions for information and entertainment only. We are not a bookmaker, and nothing
         on this site is financial, investment or betting advice.
       </p>
       <h2>No guarantees</h2>

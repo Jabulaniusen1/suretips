@@ -35,7 +35,7 @@ export const getMarketPageOverride = cache(async (slug: string): Promise<MarketP
   if (!isMarketPageSlug(slug)) return null;
   const { data, error } = await createPublicClient()
     .from("custom_pages")
-    .select("meta_title, meta_description, heading, introduction, main_content, faq, og_image, noindex, updated_at")
+    .select("meta_title, meta_description, meta_keywords, heading, introduction, main_content, faq, og_image, noindex, updated_at")
     .eq("slug", slug)
     .eq("is_published", true)
     .maybeSingle();

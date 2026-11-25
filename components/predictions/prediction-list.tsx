@@ -14,6 +14,9 @@ type Prediction = PublicPrediction;
 //   @2xl:    time | match | tip | odds | confidence | result
 const ROW_GRID =
   "grid grid-cols-[3.25rem_minmax(0,1fr)_auto] items-center gap-x-3 @2xl:grid-cols-[4rem_minmax(0,1fr)_10rem_3.5rem_5.5rem_6rem] @2xl:gap-x-4";
+// Same template without the Result column (showResult={false}).
+const ROW_GRID_NO_RESULT =
+  "grid grid-cols-[3.25rem_minmax(0,1fr)_auto] items-center gap-x-3 @2xl:grid-cols-[4rem_minmax(0,1fr)_10rem_3.5rem_5.5rem] @2xl:gap-x-4";
 
 const RESULT_STYLES: Record<Prediction["result"], { label: string; icon: LucideIcon; className: string }> = {
   win: { label: "Won", icon: Check, className: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" },
@@ -140,7 +143,7 @@ export function ResultBadge({ result, verified }: { result: Prediction["result"]
   );
 }
 
-function PredictionRow({ prediction, showDate }: { prediction: Prediction; showDate: boolean }) {
+function PredictionRow({ prediction, showDate, showResult }: { prediction: Prediction; showDate: boolean; showResult: boolean }) {
   const isLive = prediction.status === "live";
   const isFinished = prediction.status === "finished";
   const hasScore = prediction.status !== "not_started" && prediction.home_score !== null && prediction.away_score !== null;
@@ -152,7 +155,7 @@ function PredictionRow({ prediction, showDate }: { prediction: Prediction; showD
     <Link
       href={predictionHref(prediction)}
       aria-label={`${prediction.home_team} vs ${prediction.away_team}: ${prediction.prediction_type}`}
-      className={cn(ROW_GRID, "relative px-4 py-3 transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none", isLive && "bg-brand/[0.03]")}
+      className={cn(showResult ? ROW_GRID : ROW_GRID_NO_RESULT, "relative px-4 py-3 transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none", isLive && "bg-brand/[0.03]")}
     >
       {isLive && <span aria-hidden className="absolute inset-y-0 left-0 w-0.5 bg-brand" />}
 
@@ -183,7 +186,7 @@ function PredictionRow({ prediction, showDate }: { prediction: Prediction; showD
           {prediction.confidence !== null && (
             <span className={cn("font-medium", confidenceTone(prediction.confidence).text)}>{prediction.confidence}%</span>
           )}
-          {prediction.result !== "pending" && <ResultBadge result={prediction.result} verified={prediction.result_approved} />}
+          {showResult && prediction.result !== "pending" && <ResultBadge result={prediction.result} verified={prediction.result_approved} />}
         </div>
       </div>
 
@@ -197,9 +200,11 @@ function PredictionRow({ prediction, showDate }: { prediction: Prediction; showD
       <div className="hidden @2xl:block">
         <ConfidenceMeter value={prediction.confidence} />
       </div>
-      <div className="hidden justify-self-end @2xl:block">
-        <ResultBadge result={prediction.result} verified={prediction.result_approved} />
-      </div>
+      {showResult && (
+        <div className="hidden justify-self-end @2xl:block">
+          <ResultBadge result={prediction.result} verified={prediction.result_approved} />
+        </div>
+      )}
     </Link>
   );
 }
@@ -209,6 +214,8 @@ export function PredictionList({
   emptyState,
   showDate = false,
   groupByCompetition = true,
+  showResult = true,
+  totalCount,
 }: {
   predictions: Prediction[];
   emptyState?: React.ReactNode;
@@ -216,6 +223,10 @@ export function PredictionList({
   showDate?: boolean;
   /** Ranked lists (e.g. safe picks) keep their order instead of grouping. */
   groupByCompetition?: boolean;
+  /** Show the Won / Lost / Pending result column. */
+  showResult?: boolean;
+  /** Size of the full list when only part of it is rendered (see ExpandablePredictionList). */
+  totalCount?: number;
 }) {
   if (predictions.length === 0) {
     return (
@@ -232,20 +243,21 @@ export function PredictionList({
     ? groupByLeague(predictions)
     : [{ key: "ranked", name: "", leagueId: null, items: predictions }];
   const leagueCount = new Set(predictions.map((p) => p.league_id ?? p.league)).size;
-  const hasUnverified = predictions.some((p) => p.result !== "pending" && !p.result_approved);
+  const hasUnverified = showResult && predictions.some((p) => p.result !== "pending" && !p.result_approved);
+  const partial = totalCount !== undefined && totalCount > predictions.length;
 
   return (
     <div className="@container overflow-hidden rounded-2xl border border-border bg-card">
       <div
         aria-hidden
-        className={cn(ROW_GRID, "border-b border-border bg-muted/40 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground")}
+        className={cn(showResult ? ROW_GRID : ROW_GRID_NO_RESULT, "border-b border-border bg-muted/40 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground")}
       >
         <span>Time</span>
         <span>Match</span>
         <span className="text-right @2xl:text-left">Tip</span>
         <span className="hidden @2xl:block">Odds</span>
         <span className="hidden @2xl:block">Confidence</span>
-        <span className="hidden text-right @2xl:block">Result</span>
+        {showResult && <span className="hidden text-right @2xl:block">Result</span>}
       </div>
 
       {groups.map((group) => (
@@ -261,7 +273,7 @@ export function PredictionList({
           )}
           <div className="divide-y divide-border">
             {group.items.map((prediction) => (
-              <PredictionRow key={prediction.id} prediction={prediction} showDate={showDate} />
+              <PredictionRow key={prediction.id} prediction={prediction} showDate={showDate} showResult={showResult} />
             ))}
           </div>
         </section>
@@ -269,7 +281,8 @@ export function PredictionList({
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border bg-muted/30 px-4 py-2 text-[11px] text-muted-foreground">
         <span>
-          {predictions.length} {predictions.length === 1 ? "prediction" : "predictions"} · {leagueCount} {leagueCount === 1 ? "competition" : "competitions"} · Times in WAT
+          {partial ? `Showing ${predictions.length} of ${totalCount} predictions` : `${predictions.length} ${predictions.length === 1 ? "prediction" : "predictions"}`} ·{" "}
+          {leagueCount} {leagueCount === 1 ? "competition" : "competitions"} · Times in WAT
         </span>
         {hasUnverified && <span>Dashed result = awaiting verification</span>}
       </div>

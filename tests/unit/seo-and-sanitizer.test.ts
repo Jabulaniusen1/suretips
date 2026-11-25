@@ -1,11 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { pageMetadata } from "@/lib/seo";
+import { pageMetadata, parseKeywords } from "@/lib/seo";
 import { sanitizeHtml } from "@/lib/sanitize-html";
 import { addDaysToKey, isOtherDayView, lagosDateKey } from "@/lib/utils/date";
 
 test("page titles never carry the brand twice", () => {
-  for (const title of ["Over 2.5 Explained | SureMatchContact", "Over 2.5 Explained – SureMatchContact", "Over 2.5 Explained"]) {
+  for (const title of ["Over 2.5 Explained | Sure Match Tips", "Over 2.5 Explained – Sure Match Tips", "Over 2.5 Explained"]) {
     const meta = pageMetadata({ title, description: "d", path: "/x" });
     assert.equal(meta.title, "Over 2.5 Explained", title);
     assert.equal((meta.openGraph as { title?: string }).title, "Over 2.5 Explained");
@@ -27,4 +27,12 @@ test("other-day views are detected for noindex", () => {
   assert.equal(isOtherDayView("previous", undefined), true);
   assert.equal(isOtherDayView(undefined, addDaysToKey(today, -3)), true);
   assert.equal(isOtherDayView(undefined, "not-a-date"), false);
+});
+
+test("meta keywords are trimmed, de-duplicated, capped and only rendered when present", () => {
+  assert.deepEqual(parseKeywords("  over 2.5 tips, Over 2.5 Tips ,,goals\npredictions ,  btts  "), ["over 2.5 tips", "goals", "predictions", "btts"]);
+  assert.deepEqual(parseKeywords(null), []);
+  assert.equal(parseKeywords(Array.from({ length: 30 }, (_, i) => `k${i}`).join(",")).length, 20);
+  assert.deepEqual(pageMetadata({ title: "t", description: "d", path: "/x", keywords: ["a", "b"] }).keywords, ["a", "b"]);
+  assert.equal("keywords" in pageMetadata({ title: "t", description: "d", path: "/x", keywords: [] }), false);
 });

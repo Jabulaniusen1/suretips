@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/data/admin";
 import { HARD_RESERVED_TIPS_SLUGS, MARKET_PAGE_SLUGS, isMarketPageSlug } from "@/lib/seo/market-pages";
 import { SLUG_RE, indexabilityIssues } from "@/lib/seo/custom-page-rules";
+import { parseKeywords } from "@/lib/seo";
 
 const text = (max: number) => z.string().trim().max(max).optional().default("");
 
@@ -26,6 +27,7 @@ const schema = z.object({
   main_content: text(20000),
   meta_title: text(70),
   meta_description: text(170),
+  meta_keywords: text(500),
   filter_id: z.union([z.literal(""), z.literal("all"), z.enum(MARKET_PAGE_SLUGS as [string, ...string[]])]).default("all"),
   is_published: z.boolean(),
   noindex: z.boolean(),
@@ -74,6 +76,8 @@ function validate(input: CustomPageInput) {
     main_content: data.main_content || null,
     meta_title: data.meta_title || null,
     meta_description: data.meta_description || null,
+    // Stored normalised: trimmed, de-duplicated, comma-separated.
+    meta_keywords: parseKeywords(data.meta_keywords).join(", ") || null,
     canonical_url: data.canonical_url || null,
     og_image: data.og_image || null,
     footer_label: data.footer_label || null,

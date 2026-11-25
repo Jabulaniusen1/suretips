@@ -28,7 +28,7 @@ export function supabaseServiceRoleKey(): string {
 const DEV_SITE_URL = "http://localhost:3000";
 
 /**
- * Canonical origin, e.g. https://surematchcontact.com (no trailing slash).
+ * Canonical origin, e.g. https://surematchtips.com (no trailing slash).
  * Every canonical URL, sitemap entry, Open Graph URL and JSON-LD id is built
  * from this value, so production must set NEXT_PUBLIC_SITE_URL to the single
  * preferred https origin.

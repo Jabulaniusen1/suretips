@@ -161,6 +161,8 @@ export interface Database {
           footer_order: number | null;
           meta_title: string | null;
           meta_description: string | null;
+          /** Normalised comma-separated list, rendered as <meta name="keywords">. */
+          meta_keywords: string | null;
           created_at: string;
           updated_at: string;
         };

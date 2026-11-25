@@ -17,7 +17,7 @@ import {
 } from "@/lib/seo/market-pages";
 import { MARKET_LABELS, isMarketKey, type MarketKey } from "@/lib/predictions/markets";
 import { getDateRange, formatShortDate, isOtherDayView, lagosDateKey, type DateRange } from "@/lib/utils/date";
-import { pageMetadata, truncateDescription } from "@/lib/seo";
+import { pageMetadata, parseKeywords, truncateDescription } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { MarketNav } from "@/components/predictions/market-nav";
 import { DateNav } from "@/components/predictions/date-nav";
@@ -64,6 +64,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
       path: `/tips/${slug}`,
       image: market.ogImage ? { url: market.ogImage, alt: market.h1 } : undefined,
       noIndex: market.noIndex || otherDay,
+      keywords: parseKeywords(market.metaKeywords),
     });
   }
 
@@ -76,6 +77,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     path: page.canonical_url || `/tips/${slug}`,
     image: page.og_image ? { url: page.og_image, alt: page.heading || page.title } : undefined,
     noIndex: !isCustomPageIndexable(page) || otherDay,
+    keywords: parseKeywords(page.meta_keywords),
   });
 }
 

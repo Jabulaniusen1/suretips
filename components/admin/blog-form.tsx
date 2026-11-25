@@ -117,7 +117,7 @@ export function BlogForm({ post, competitions }: { post?: Tables<"blog_posts">; 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="b-author">Author byline</Label>
-          <Input id="b-author" placeholder="Blank = SureMatchContact editorial team" value={authorName} onChange={(e) => setAuthorName(e.target.value)} />
+          <Input id="b-author" placeholder="Blank = Sure Match Tips editorial team" value={authorName} onChange={(e) => setAuthorName(e.target.value)} />
           <p className="text-xs text-muted-foreground">Use the real name of the person who wrote and checked the article.</p>
         </div>
         <div className="space-y-2">

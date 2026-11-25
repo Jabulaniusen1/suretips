@@ -10,6 +10,7 @@ import { organizationJsonLd, pageMetadata, websiteJsonLd } from "@/lib/seo";
 import { MarketNav } from "@/components/predictions/market-nav";
 import { DateNav } from "@/components/predictions/date-nav";
 import { PredictionList } from "@/components/predictions/prediction-list";
+import { ExpandablePredictionList } from "@/components/predictions/expandable-prediction-list";
 import { ResultsSummary } from "@/components/predictions/results-summary";
 import { MarketGrid } from "@/components/home/market-grid";
 import { CompetitionsStrip } from "@/components/home/competitions-strip";
@@ -24,7 +25,7 @@ export async function generateMetadata({ searchParams }: { searchParams: HomeSea
   const { period, date } = await searchParams;
   return pageMetadata({
     title: "Free Football Predictions Today",
-    absoluteTitle: "Free Football Predictions Today & Soccer Tips | SureMatchContact",
+    absoluteTitle: "Free Football Predictions Today & Soccer Tips | Sure Match Tips",
     description:
       "Free football predictions today: daily soccer tips by market with odds, confidence and match analysis, plus a verified public record of every result.",
     path: "/",
@@ -81,7 +82,7 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
             Free Football Predictions Today – Daily Soccer Tips &amp; Match Analysis
           </h1>
           <p className="mt-3 max-w-3xl text-muted-foreground">
-            SureMatchContact publishes free football predictions every day across the match result, goals, both teams to score and
+            Sure Match Tips publishes free football predictions every day across the match result, goals, both teams to score and
             double chance markets. Each tip shows its odds and confidence, links to a match preview with head-to-head and form data,
             and stays on our public results record — win or lose.
           </p>
@@ -103,8 +104,11 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
           <DateNav active={range.period} basePath="/" dateKey={range.dateKey} dateLabel={range.label} />
         </div>
         <div className="mt-4">
-          <PredictionList
+          {/* First 20 picks, with See more / See less; no Won/Lost column on the homepage. */}
+          <ExpandablePredictionList
             predictions={predictions}
+            pageSize={20}
+            showResult={false}
             emptyState={
               <>
                 No predictions have been published for {range.label} yet. New picks are usually added the day before kickoff —
@@ -130,7 +134,7 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
             </Link>
           </div>
           <div className="mt-4">
-            <PredictionList predictions={tomorrow.slice(0, 10)} />
+            <PredictionList predictions={tomorrow.slice(0, 10)} showResult={false} />
           </div>
         </section>
       )}
@@ -148,6 +152,8 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
           <MarketGrid predictions={todays} slugs={HOME_MARKETS} />
         </div>
       </section>
+
+      <BlogSection />
 
       {competitions.length > 0 && (
         <section aria-labelledby="competitions" className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -182,12 +188,11 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
         </div>
       </section>
 
-      <BlogSection />
       <LeagueTableSection />
 
       <section aria-labelledby="trust" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <h2 id="trust" className="text-xl font-bold">
-          How SureMatchContact works
+          How Sure Match Tips works
         </h2>
         <div className="mt-5 grid gap-5 sm:grid-cols-3">
           {TRUST_POINTS.map((point) => (

@@ -70,7 +70,7 @@ export const MARKET_PAGES: MarketPage[] = [
     explainer: {
       heading: "How the free tips shortlist works",
       paragraphs: [
-        "Most matches on SureMatchContact carry several predictions — for example a goals pick, a both-teams-to-score pick and a double chance pick. This page keeps only the strongest of them for each fixture, so you get one scannable list instead of every market at once.",
+        "Most matches on Sure Match Tips carry several predictions — for example a goals pick, a both-teams-to-score pick and a double chance pick. This page keeps only the strongest of them for each fixture, so you get one scannable list instead of every market at once.",
         "Picks are ranked by confidence. For automatically selected tips, confidence is the bookmaker's implied probability (100 ÷ decimal odds); for editorial picks it is the editor's own rating. Very short-priced selections such as Over 0.5 Goals are only used when nothing else qualifies, because they say little about a match.",
       ],
     },
@@ -89,7 +89,7 @@ export const MARKET_PAGES: MarketPage[] = [
     faqs: [
       {
         question: "Are these football tips really free?",
-        answer: "Yes. Every prediction on SureMatchContact is free to view. There are no subscriptions, paid packages or locked tips.",
+        answer: "Yes. Every prediction on Sure Match Tips is free to view. There are no subscriptions, paid packages or locked tips.",
       },
       {
         question: "Why does each match only show one tip here?",
@@ -895,7 +895,7 @@ export const MARKET_PAGES: MarketPage[] = [
       },
       {
         question: "Are correct score predictions free?",
-        answer: "Yes. All correct score predictions on SureMatchContact are free to view, like every other tip on the site.",
+        answer: "Yes. All correct score predictions on Sure Match Tips are free to view, like every other tip on the site.",
       },
     ],
     related: ["draw", "under-2-5", "btts", "home-win", "free"],
@@ -923,13 +923,14 @@ export function isMarketPageSlug(slug: string): boolean {
 
 /** Titles get the brand from the layout template; drop a hand-typed suffix. */
 export function stripBrandSuffix(title: string): string {
-  return title.replace(/\s*[|–—-]\s*SureMatchContact\s*$/i, "").trim();
+  return title.replace(/\s*[|–—-]\s*Sure Match Tips\s*$/i, "").trim();
 }
 
 /** Admin-editable fields of a built-in page (a published custom_pages row with the same slug). */
 export interface MarketPageOverride {
   meta_title: string | null;
   meta_description: string | null;
+  meta_keywords: string | null;
   heading: string | null;
   introduction: string | null;
   main_content: string | null;
@@ -940,6 +941,8 @@ export interface MarketPageOverride {
 }
 
 export interface ResolvedMarketPage extends MarketPage {
+  /** Raw comma-separated meta keywords from the admin override (parsed by the page). */
+  metaKeywords: string | null;
   mainContent: string | null;
   ogImage: string | null;
   noIndex: boolean;
@@ -957,6 +960,7 @@ export function applyMarketPageOverride(page: MarketPage, override: MarketPageOv
     h1: text(override?.heading) ?? page.h1,
     intro: text(override?.introduction) ?? page.intro,
     faqs: faqs.length > 0 ? faqs : page.faqs,
+    metaKeywords: text(override?.meta_keywords),
     mainContent: text(override?.main_content),
     ogImage: text(override?.og_image),
     noIndex: Boolean(override?.noindex),

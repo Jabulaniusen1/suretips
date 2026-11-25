@@ -44,6 +44,7 @@ export function CustomPageForm({ page }: { page?: Tables<"custom_pages"> }) {
   const [mainContent, setMainContent] = useState(page?.main_content ?? "");
   const [metaTitle, setMetaTitle] = useState(page?.meta_title ?? "");
   const [metaDescription, setMetaDescription] = useState(page?.meta_description ?? "");
+  const [metaKeywords, setMetaKeywords] = useState(page?.meta_keywords ?? "");
   const [filterId, setFilterId] = useState(page?.filter_id && page.filter_id !== "" ? page.filter_id : "all");
   const [isPublished, setIsPublished] = useState(page?.is_published ?? false);
   const [noindex, setNoindex] = useState(page?.noindex ?? false);
@@ -82,6 +83,7 @@ export function CustomPageForm({ page }: { page?: Tables<"custom_pages"> }) {
         main_content: mainContent,
         meta_title: metaTitle,
         meta_description: metaDescription,
+        meta_keywords: metaKeywords,
         filter_id: filterId,
         is_published: isPublished,
         noindex,
@@ -144,6 +146,18 @@ export function CustomPageForm({ page }: { page?: Tables<"custom_pages"> }) {
             Meta description <Counter value={metaDescription} max={158} />
           </Label>
           <Textarea id="cp-meta-desc" rows={2} value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="cp-meta-keywords" className="flex justify-between">
+            Meta keywords <Counter value={metaKeywords} max={500} />
+          </Label>
+          <Input
+            id="cp-meta-keywords"
+            placeholder="over 2.5 goals tips, goals predictions today, over 2.5 betting tips"
+            value={metaKeywords}
+            onChange={(e) => setMetaKeywords(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">Separate keywords with commas. Duplicates are removed; up to 20 are kept.</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">

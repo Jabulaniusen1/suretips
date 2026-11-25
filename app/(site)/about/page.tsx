@@ -6,17 +6,17 @@ import { LegalPage } from "@/components/site/legal-page";
 export const metadata: Metadata = pageMetadata({
   title: "About Us – Free Football Predictions You Can Check",
   description:
-    "SureMatchContact is a free football predictions site: daily tips by market, match data and a verified public record of every result. Here is how it works.",
+    "Sure Match Tips is a free football predictions site: daily tips by market, match data and a verified public record of every result. Here is how it works.",
   path: "/about",
 });
 
 export default function AboutPage() {
   return (
     <LegalPage
-      title="About SureMatchContact"
+      title="About Sure Match Tips"
       path="/about"
       updated="2026-11-23"
-      intro="SureMatchContact is a free football predictions and match analysis site. Everything we publish is free to read, and every prediction stays on a public record — wins and losses."
+      intro="Sure Match Tips is a free football predictions and match analysis site. Everything we publish is free to read, and every prediction stays on a public record — wins and losses."
     >
       <h2>What we publish</h2>
       <ul>
@@ -44,7 +44,7 @@ export default function AboutPage() {
       <ul>
         <li>We don&apos;t sell tips, subscriptions or “VIP” packages. There is no paid content.</li>
         <li>We don&apos;t promise guaranteed wins, “sure” odds or fixed matches — nobody can.</li>
-        <li>We don&apos;t take bets. SureMatchContact is not a bookmaker.</li>
+        <li>We don&apos;t take bets. Sure Match Tips is not a bookmaker.</li>
         <li>We don&apos;t delete losing predictions or edit picks after kickoff.</li>
       </ul>
 

@@ -5,13 +5,13 @@ import { LegalPage } from "@/components/site/legal-page";
 
 export const metadata: Metadata = pageMetadata({
   title: "Privacy Policy",
-  description: "What personal data SureMatchContact collects, why, who processes it and the choices you have.",
+  description: "What personal data Sure Match Tips collects, why, who processes it and the choices you have.",
   path: "/privacy",
 });
 
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacy Policy" path="/privacy" updated="2026-11-25" intro="You can read every prediction on SureMatchContact without giving us any personal information.">
+    <LegalPage title="Privacy Policy" path="/privacy" updated="2026-11-25" intro="You can read every prediction on Sure Match Tips without giving us any personal information.">
       <h2>What we collect</h2>
       <ul>
         <li>

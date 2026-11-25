@@ -6,7 +6,7 @@ import { stripBrandSuffix } from "@/lib/seo/market-pages";
 // metadata through `pageMetadata` so canonical URLs, Open Graph and Twitter
 // tags stay consistent, and all JSON-LD comes from the builders below.
 
-export const SITE_NAME = "SureMatchContact";
+export const SITE_NAME = "Sure Match Tips";
 export const SITE_DESCRIPTION =
   "Free football predictions, daily betting tips by market, match previews with head-to-head and form data, and a transparent record of every published result.";
 export const SITE_LOCALE = "en_GB";
@@ -38,12 +38,34 @@ export interface PageMetadataOptions {
   modifiedTime?: string;
   /** noindex, follow -- for thin, filtered or duplicate views. */
   noIndex?: boolean;
+  /** Rendered as <meta name="keywords"> when non-empty. */
+  keywords?: string[];
+}
+
+/** Max keywords kept from an editor's list. */
+const MAX_KEYWORDS = 20;
+
+/**
+ * Parses an editor's comma-separated keyword list: trims, drops empties and
+ * case-insensitive duplicates, and caps the count.
+ */
+export function parseKeywords(value: string | null | undefined): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of (value ?? "").split(/[,\n]/)) {
+    const keyword = raw.replace(/\s+/g, " ").trim();
+    if (!keyword || seen.has(keyword.toLowerCase())) continue;
+    seen.add(keyword.toLowerCase());
+    out.push(keyword);
+    if (out.length >= MAX_KEYWORDS) break;
+  }
+  return out;
 }
 
 export function pageMetadata(options: PageMetadataOptions): Metadata {
-  const { absoluteTitle, description, path, type = "website", noIndex } = options;
+  const { absoluteTitle, description, path, type = "website", noIndex, keywords } = options;
   // The layout template appends the brand; drop one typed by an editor
-  // ("… | SureMatchContact") so it never appears twice.
+  // ("… | Sure Match Tips") so it never appears twice.
   const title = stripBrandSuffix(options.title);
   const socialTitle = absoluteTitle ?? title;
   const image = options.image ?? defaultOgImage(socialTitle);
@@ -71,6 +93,7 @@ export function pageMetadata(options: PageMetadataOptions): Metadata {
       images: [image.url],
     },
     ...(noIndex ? { robots: { index: false, follow: true } } : {}),
+    ...(keywords && keywords.length > 0 ? { keywords } : {}),
   };
 }
 

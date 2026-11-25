@@ -20,7 +20,7 @@ export default function ResponsibleBettingPage() {
     >
       <h2>18+ only</h2>
       <p>
-        SureMatchContact is intended for adults aged 18 or over, or the legal betting age where you live if that is higher. Betting
+        Sure Match Tips is intended for adults aged 18 or over, or the legal betting age where you live if that is higher. Betting
         laws differ between countries; make sure betting is legal for you before you bet.
       </p>
 

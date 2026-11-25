@@ -6,7 +6,7 @@ import { LegalPage } from "@/components/site/legal-page";
 export const metadata: Metadata = pageMetadata({
   title: "Editorial Standards",
   description:
-    "The standards SureMatchContact follows for predictions, articles and statistics: accuracy, no guaranteed wins, no fabricated data and clear corrections.",
+    "The standards Sure Match Tips follows for predictions, articles and statistics: accuracy, no guaranteed wins, no fabricated data and clear corrections.",
   path: "/editorial-standards",
 });
 
@@ -35,14 +35,14 @@ export default function EditorialStandardsPage() {
       <h2>Articles</h2>
       <ul>
         <li>Articles are written to explain — how a market works, what the numbers say about a league or team — not to push bets.</li>
-        <li>Articles show who wrote them. Posts without a named author are written by the SureMatchContact editorial team. We do not invent authors or credentials.</li>
+        <li>Articles show who wrote them. Posts without a named author are written by the Sure Match Tips editorial team. We do not invent authors or credentials.</li>
         <li>Software tools may help with research and drafting, but every article is reviewed and fact-checked by an editor before publication.</li>
         <li>Each article shows when it was published and when it was last substantially updated.</li>
       </ul>
 
       <h2>Advertising and links</h2>
       <p>
-        SureMatchContact is free. Any sponsored or advertising link is labelled and marked <code>sponsored</code>; advertisers
+        Sure Match Tips is free. Any sponsored or advertising link is labelled and marked <code>sponsored</code>; advertisers
         have no say over our predictions or articles.
       </p>
 

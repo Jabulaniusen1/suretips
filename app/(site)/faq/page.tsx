@@ -7,13 +7,13 @@ import { JsonLd } from "@/components/seo/json-ld";
 export const metadata: Metadata = pageMetadata({
   title: "FAQ – Football Predictions Questions Answered",
   description:
-    "Answers to common questions about SureMatchContact: whether tips are free, how predictions are chosen, what confidence means, how results are verified and more.",
+    "Answers to common questions about Sure Match Tips: whether tips are free, how predictions are chosen, what confidence means, how results are verified and more.",
   path: "/faq",
 });
 
 const FAQS = [
   {
-    question: "Are SureMatchContact predictions free?",
+    question: "Are Sure Match Tips predictions free?",
     answer: "Yes. Every prediction, match page and article is free to read. There are no subscriptions, paid tips or locked content.",
   },
   {
@@ -43,7 +43,7 @@ const FAQS = [
   },
   {
     question: "Do you take bets?",
-    answer: "No. SureMatchContact is an information site, not a bookmaker. We do not accept bets or handle money.",
+    answer: "No. Sure Match Tips is an information site, not a bookmaker. We do not accept bets or handle money.",
   },
   {
     question: "How do I report a mistake?",

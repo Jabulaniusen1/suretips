@@ -9,7 +9,7 @@ export const revalidate = 3600;
 
 export const metadata: Metadata = pageMetadata({
   title: "Contact Us",
-  description: "Contact SureMatchContact with questions about a prediction or result, to report a mistake, or for general enquiries.",
+  description: "Contact Sure Match Tips with questions about a prediction or result, to report a mistake, or for general enquiries.",
   path: "/contact",
 });
 
