@@ -6,7 +6,6 @@ import { getActiveCompetitions } from "@/lib/data/competitions";
 import { getResultWindows } from "@/lib/data/results";
 import { getSiteConfig, socialProfileUrls } from "@/lib/data/site-config";
 import { addDaysToKey, formatDateKeyLong, getDateRange, isOtherDayView, lagosDateKey } from "@/lib/utils/date";
-import { formatWinRate } from "@/lib/predictions/stats";
 import { organizationJsonLd, pageMetadata, websiteJsonLd } from "@/lib/seo";
 import { MarketNav } from "@/components/predictions/market-nav";
 import { DateNav } from "@/components/predictions/date-nav";
@@ -44,7 +43,7 @@ const TRUST_POINTS = [
   {
     icon: CheckCircle2,
     title: "Results are verified",
-    text: "Scores come from API-Sports and are graded automatically, then checked by an editor before they count in our statistics.",
+    text: "Final scores come from API-Sports and every pick is graded automatically on the 90-minute result, losses included.",
   },
   {
     icon: Scale,
@@ -86,24 +85,6 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
             double chance markets. Each tip shows its odds and confidence, links to a match preview with head-to-head and form data,
             and stays on our public results record — win or lose.
           </p>
-          <dl className="mt-5 flex flex-wrap gap-x-8 gap-y-2 text-sm">
-            <div className="flex gap-2">
-              <dt className="text-muted-foreground">Today:</dt>
-              <dd className="font-semibold">
-                {todays.length} {todays.length === 1 ? "prediction" : "predictions"}
-              </dd>
-            </div>
-            <div className="flex gap-2">
-              <dt className="text-muted-foreground">Verified win rate, last 30 days:</dt>
-              <dd className="font-semibold">
-                <Link href="/previous-results" className="hover:text-brand">
-                  {results.last30 && results.last30.settled > 0
-                    ? `${formatWinRate(results.last30.winRate)} (${results.last30.settled} settled)`
-                    : "not enough verified results yet"}
-                </Link>
-              </dd>
-            </div>
-          </dl>
         </div>
       </section>
 

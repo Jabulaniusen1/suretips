@@ -10,15 +10,17 @@ export function MarketNav({ active }: { active: string | "all" }) {
   const items = [{ href: "/", label: "All Tips", key: "all" }, ...MARKET_PAGES.map((p) => ({ href: `/tips/${p.slug}`, label: p.tabLabel, key: p.slug }))];
 
   return (
-    <nav aria-label="Prediction markets" className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-      <ul className="flex w-max gap-1.5 sm:w-auto sm:flex-wrap">
+    // Wraps onto several rows on every screen size, so all markets stay visible
+    // (on phones the chips are a little smaller to keep the block compact).
+    <nav aria-label="Prediction markets">
+      <ul className="flex flex-wrap gap-1.5 sm:gap-2">
         {items.map((item) => (
           <li key={item.key}>
             <Link
               href={item.href}
               aria-current={active === item.key ? "page" : undefined}
               className={cn(
-                "block whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+                "block whitespace-nowrap rounded-full border px-3 py-1.5 text-[13px] font-medium leading-5 transition-colors sm:px-3.5 sm:text-sm",
                 active === item.key
                   ? "border-brand bg-brand text-brand-foreground"
                   : "border-border bg-card text-muted-foreground hover:border-brand/50 hover:text-foreground"
