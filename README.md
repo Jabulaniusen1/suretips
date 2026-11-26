@@ -52,7 +52,6 @@ Copy `.env.local.example` to `.env.local` and fill in:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Project Settings > API. Safe for the browser — RLS enforces access. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes (for cron) | Project Settings > API. **Server-only secret, never expose to the client.** Used solely by the three cron routes below, which run with no user session and so cannot rely on RLS. |
 | `API_FOOTBALL_KEY` | No | Powers fixture sync, standings, H2H, and live score updates. App works without it (empty states). |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` / `SMTP_FROM` | No | Transactional email (payment confirmations, expiry reminders). Skipped with a warning if unset. |
 | `CRON_SECRET` | Yes (for cron) | Shared secret the three cron routes require in `Authorization: Bearer <secret>`. Generate with `openssl rand -hex 32`. |
 | `NEXT_PUBLIC_GA_ID` | No | Google Analytics. |
 
@@ -126,9 +125,8 @@ with the declared secrets read from `.env.local`.
 in `.env.local`. Only declared names reach the Worker. `NEXT_PUBLIC_*` values are built into the code
 instead.
 
-**Contact form email** needs SMTP settings (`SMTP_HOST` etc.), which are not configured yet; until they
-are, the form tells visitors it is unavailable. SMTP over `nodemailer` is not verified on Workers. If it
-fails there, use an HTTP email API instead.
+**Contact** is by email only: the contact page shows the address set in Admin > Links & Contact as a
+`mailto:` link. There is no contact form, so the site sends no email and needs no SMTP settings.
 
 ## Architecture notes
 

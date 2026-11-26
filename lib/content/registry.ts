@@ -427,18 +427,18 @@ const STATIC_GROUPS = {
       "contact.h1": line("Main heading", "Contact Us"),
       "contact.intro": text(
         "Intro paragraph",
-        "Questions about a prediction, a result you think was graded wrongly, or anything else on the site — send us a message. We read everything. Please don't send betting slips or payment details: we never take bets or payments.",
+        "Questions about a prediction, a result you think was graded wrongly, or anything else on the site — email us. We read everything. Please don't send betting slips or payment details: we never take bets or payments.",
         { optional: true }
+      ),
+      "contact.emailLabel": line("Label above the email address", "Email us"),
+      "contact.noEmail": text(
+        "Shown when no contact email is set",
+        "Our email address will be listed here soon.",
+        { optional: true, help: "The address itself is set in Admin > Links & Contact." }
       ),
       "contact.telegram": line("Telegram link label", "Telegram channel"),
       "contact.whatsapp": line("WhatsApp link label", "WhatsApp"),
       "contact.support": line("Support link label", "Chat with support"),
-      "contact.formName": line("Form: name label", "Name"),
-      "contact.formEmail": line("Form: email label", "Email"),
-      "contact.formMessage": line("Form: message label", "Message"),
-      "contact.formSend": line("Form: send button", "Send Message"),
-      "contact.formSending": line("Form: sending…", "Sending…"),
-      "contact.formSuccess": line("Form: success message", "Message sent! We'll get back to you soon."),
     }
   ),
   notFound: group(

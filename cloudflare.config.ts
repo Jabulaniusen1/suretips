@@ -23,9 +23,8 @@ export default defineConfig({
       API_FOOTBALL_BASE_URL: bindings.secret(),
       CRON_SECRET: bindings.secret(),
       // Optional -- declare (as bindings.secret()) only once you set them:
-      //   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM, CONTACT_FORM_TO
-      //   (contact-form email; currently not configured), and the API-Football
-      //   tuning values API_FOOTBALL_BOOKMAKER_ID, API_FOOTBALL_MIN_INTERVAL_MS.
+      //   the API-Football tuning values API_FOOTBALL_BOOKMAKER_ID and
+      //   API_FOOTBALL_MIN_INTERVAL_MS.
     },
     // Replaces the Vercel crons in vercel.json. Keep in sync with CRON_JOBS in worker/index.ts.
     triggers: [

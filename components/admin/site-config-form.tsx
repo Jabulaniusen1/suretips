@@ -51,7 +51,8 @@ export function SiteConfigForm({ config }: { config: SiteConfig }) {
         </div>
         <div className="space-y-2">
           <Label htmlFor="cfg-email">Contact email</Label>
-          <Input id="cfg-email" type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
+          <Input id="cfg-email" type="email" placeholder="hello@…" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
+          <p className="text-xs text-muted-foreground">Shown on the contact page — visitors reach you by email.</p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="cfg-telegram">Telegram channel URL</Label>
