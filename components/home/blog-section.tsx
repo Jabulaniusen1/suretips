@@ -3,23 +3,25 @@ import Image from "next/image";
 import { canOptimizeImage } from "@/lib/images";
 import { getRecentPublishedPosts } from "@/lib/data/blog";
 import { formatShortDate } from "@/lib/utils/date";
+import { getSiteText } from "@/lib/content/site-text";
+import { InlineContent } from "@/components/content/plain-content";
 
 export async function BlogSection() {
-  const posts = await getRecentPublishedPosts(3);
+  const [posts, text] = await Promise.all([getRecentPublishedPosts(3), getSiteText()]);
 
   return (
     <section aria-labelledby="home-blog" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <h2 id="home-blog" className="text-xl font-bold">
-          Football guides &amp; analysis
+          <InlineContent text={text.t("home.blogHeading")} />
         </h2>
         <Link href="/blog" className="text-sm font-medium text-brand hover:underline">
-          All articles
+          {text.t("home.blogLink")}
         </Link>
       </div>
       {posts.length === 0 ? (
         <div className="mt-5 rounded-2xl border border-dashed border-border bg-card px-6 py-10 text-center text-sm text-muted-foreground">
-          Match previews, betting guides and analysis will appear here soon.
+          <InlineContent text={text.t("home.blogEmpty")} />
         </div>
       ) : (
         <div className="mt-5 grid gap-5 sm:grid-cols-3">

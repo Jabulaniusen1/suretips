@@ -1,13 +1,18 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { MARKET_PAGES } from "@/lib/seo/market-pages";
+import { getMarketPagesWithText, getSiteText } from "@/lib/content/site-text";
 
 /**
  * Crawlable navigation between market pages. "All tips" is the homepage,
  * which owns the general "football predictions today" intent.
  */
-export function MarketNav({ active }: { active: string | "all" }) {
-  const items = [{ href: "/", label: "All Tips", key: "all" }, ...MARKET_PAGES.map((p) => ({ href: `/tips/${p.slug}`, label: p.tabLabel, key: p.slug }))];
+export async function MarketNav({ active }: { active: string | "all" }) {
+  // Labels are edited in Admin > Site Content (each market's "Tab & menu label").
+  const [text, markets] = await Promise.all([getSiteText(), getMarketPagesWithText()]);
+  const items = [
+    { href: "/", label: text.t("chips.allTips"), key: "all" },
+    ...markets.pages.map((p) => ({ href: `/tips/${p.slug}`, label: p.tabLabel, key: p.slug })),
+  ];
 
   return (
     // Wraps onto several rows on every screen size, so all markets stay visible

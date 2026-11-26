@@ -3,22 +3,24 @@ import { Logo } from "@/components/site/logo";
 import { MobileNav } from "@/components/site/mobile-nav";
 import { ThemeToggle } from "@/components/site/theme-toggle";
 import { getActiveAdLinks } from "@/lib/data/ad-links";
-
-export const NAV_LINKS = [
-  { href: "/", label: "Today" },
-  { href: "/predictions", label: "Tomorrow" },
-  { href: "/tips", label: "Tips by Market" },
-  { href: "/competitions", label: "Competitions" },
-  { href: "/previous-results", label: "Results" },
-  { href: "/blog", label: "Blog" },
-];
+import { getSiteText } from "@/lib/content/site-text";
 
 const MAX_AD_LINKS_IN_NAV = 2;
 
 // Deliberately session-free: reading auth cookies here would make every
 // public page dynamic and uncacheable. Accounts live under /dashboard.
 export async function SiteHeader() {
-  const adLinks = (await getActiveAdLinks()).slice(0, MAX_AD_LINKS_IN_NAV);
+  const [allAdLinks, text] = await Promise.all([getActiveAdLinks(), getSiteText()]);
+  const adLinks = allAdLinks.slice(0, MAX_AD_LINKS_IN_NAV);
+  // Labels are edited in Admin > Site Content > Header & menu.
+  const navLinks = [
+    { href: "/", label: text.t("nav.today") },
+    { href: "/predictions", label: text.t("nav.tomorrow") },
+    { href: "/tips", label: text.t("nav.tips") },
+    { href: "/competitions", label: text.t("nav.competitions") },
+    { href: "/previous-results", label: text.t("nav.results") },
+    { href: "/blog", label: text.t("nav.blog") },
+  ];
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
@@ -26,7 +28,7 @@ export async function SiteHeader() {
         <Logo />
 
         <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
-          {NAV_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -58,7 +60,7 @@ export async function SiteHeader() {
           <div className="hidden lg:block">
             <ThemeToggle />
           </div>
-          <MobileNav links={NAV_LINKS} adLinks={adLinks} />
+          <MobileNav links={navLinks} contactLabel={text.t("nav.contact")} sponsoredLabel={text.t("nav.sponsored")} adLinks={adLinks} />
         </div>
       </div>
     </header>

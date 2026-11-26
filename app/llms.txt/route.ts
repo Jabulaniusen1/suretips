@@ -1,5 +1,7 @@
 import { siteOrigin } from "@/lib/env";
-import { MARKET_GROUP_ORDER, MARKET_PAGES } from "@/lib/seo/market-pages";
+import { MARKET_GROUP_ORDER } from "@/lib/seo/market-pages";
+import { getMarketPagesWithText } from "@/lib/content/site-text";
+import { plainTextOf } from "@/lib/content/plain-text";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo";
 
 // A plain-text guide to the site for LLM-based tools (https://llmstxt.org).
@@ -7,10 +9,11 @@ import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo";
 // separate copy of the content.
 export const revalidate = 86400;
 
-export function GET() {
+export async function GET() {
   const origin = siteOrigin();
+  const { pages } = await getMarketPagesWithText();
   const markets = MARKET_GROUP_ORDER.flatMap((group) =>
-    MARKET_PAGES.filter((p) => p.group === group).map((p) => `- [${p.h1}](${origin}/tips/${p.slug}): ${p.intro}`)
+    pages.filter((p) => p.group === group).map((p) => `- [${plainTextOf(p.h1)}](${origin}/tips/${p.slug}): ${plainTextOf(p.intro)}`)
   );
 
   const body = `# ${SITE_NAME}

@@ -21,6 +21,9 @@ import { getPredictionsByFixture, getRelatedFixturePredictions, type PublicPredi
 import { getCompetitionsByLeagueId } from "@/lib/data/competitions";
 import { MARKET_LABELS, marketOf } from "@/lib/predictions/markets";
 import { marketPageForMarket, type MarketPage } from "@/lib/seo/market-pages";
+import { InlineContent } from "@/components/content/plain-content";
+import { getMarketPagesWithText, getSiteText } from "@/lib/content/site-text";
+import { plainTextOf } from "@/lib/content/plain-text";
 import { average, summarizeForm, summarizeH2H, teamForm, isCompleted, type FormEntry } from "@/lib/predictions/match-stats";
 import { formatKickoffFull, formatKickoffTime, formatShortDate } from "@/lib/utils/date";
 import { cn } from "@/lib/utils";
@@ -108,8 +111,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       } including ${pick.prediction_type}, plus head-to-head record, recent form and league position.`
     : `${fixtureName}${match.league.name ? `, ${match.league.name}` : ""}, ${date}: head-to-head record, recent form, league position and kickoff time.`;
 
+  const text = await getSiteText();
   return pageMetadata({
-    title: `${fixtureName} Prediction & H2H – ${date}`,
+    title: text.t("match.seoTitle", { fixture: fixtureName, date }),
     description: truncateDescription(description),
     path: `/match/${match.id}`,
     type: "article",
@@ -125,13 +129,15 @@ export default async function MatchPage({ params }: Props) {
   const { fixture, home, away } = match;
   const season = match.league.season ?? (match.league.id ? seasonForDate(new Date(match.kickoff), match.league.id) : null);
 
-  const [h2h, homeRecent, awayRecent, standings, related, competitions] = await Promise.all([
+  const [h2h, homeRecent, awayRecent, standings, related, competitions, text, markets] = await Promise.all([
     home.id && away.id ? attempt("h2h", () => getH2H(home.id!, away.id!, 10), []) : Promise.resolve({ data: [], failed: false }),
     home.id ? attempt("home form", () => getTeamRecentFixtures(home.id!, 6), []) : Promise.resolve({ data: [], failed: false }),
     away.id ? attempt("away form", () => getTeamRecentFixtures(away.id!, 6), []) : Promise.resolve({ data: [], failed: false }),
     match.league.id && season ? attempt("standings", () => getStandings(match.league.id!, season), null) : Promise.resolve({ data: null, failed: false }),
     getRelatedFixturePredictions(match.league.id, match.kickoff, match.id),
     getCompetitionsByLeagueId(),
+    getSiteText(),
+    getMarketPagesWithText(),
   ]);
 
   const competition = match.league.id ? competitions.get(match.league.id) : undefined;
@@ -155,7 +161,7 @@ export default async function MatchPage({ params }: Props) {
       match.predictions
         .map((p) => marketOf(p))
         .filter((m) => m !== null)
-        .map((m) => marketPageForMarket(m))
+        .map((m) => markets.forMarket(m))
         .filter((p): p is MarketPage => Boolean(p))
         .map((p) => [p.slug, p])
     ).values(),
@@ -196,7 +202,7 @@ export default async function MatchPage({ params }: Props) {
           )}
           {match.league.round ? ` · ${match.league.round}` : ""}
         </p>
-        <h1 className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">{fixtureName} Prediction</h1>
+        <h1 className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">{text.t("match.h1", { fixture: fixtureName })}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           <time dateTime={match.kickoff}>{formatKickoffFull(match.kickoff)}</time>
           {fixture?.fixture.venue?.name ? ` · ${fixture.fixture.venue.name}${fixture.fixture.venue.city ? `, ${fixture.fixture.venue.city}` : ""}` : ""}
@@ -222,7 +228,7 @@ export default async function MatchPage({ params }: Props) {
 
       <section aria-labelledby="our-predictions" className="mt-8">
         <h2 id="our-predictions" className="text-lg font-bold">
-          {fixtureName} predictions
+          {text.t("match.predictionsHeading", { fixture: fixtureName })}
         </h2>
         {match.predictions.length > 0 ? (
           <>
@@ -231,30 +237,34 @@ export default async function MatchPage({ params }: Props) {
           </>
         ) : (
           <p className="mt-2 text-sm text-muted-foreground">
-            We haven&apos;t published a prediction for this match. The statistics below are provided for reference — see{" "}
-            <Link href="/" className="font-medium text-brand hover:underline">
-              today&apos;s predictions
-            </Link>{" "}
-            for the matches we cover.
+            <InlineContent text={text.t("match.noPrediction")} />
           </p>
         )}
       </section>
 
       {statsUnavailable && (
         <p role="status" className="mt-6 rounded-xl border border-dashed border-border p-3 text-sm text-muted-foreground">
-          Some match statistics are temporarily unavailable from our data provider. Predictions above are unaffected.
+          <InlineContent text={text.t("match.statsUnavailable")} />
         </p>
       )}
 
       {h2hSummary && h2hMatches.length > 0 && (
         <section aria-labelledby="h2h" className="mt-10">
           <h2 id="h2h" className="text-lg font-bold">
-            {fixtureName} head to head
+            {text.t("match.h2hHeading", { fixture: fixtureName })}
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            In their last {h2hSummary.played} meetings, {home.name} won {h2hSummary.teamAWins}, {away.name} won {h2hSummary.teamBWins} and{" "}
-            {h2hSummary.draws} ended level, with an average of {average(h2hSummary.totalGoals, h2hSummary.played)} goals per
-            game. Both teams scored in {h2hSummary.bothScored} and {h2hSummary.over25} had three or more goals.
+            {text.t("match.h2hSummary", {
+              played: h2hSummary.played,
+              home: home.name,
+              away: away.name,
+              homeWins: h2hSummary.teamAWins,
+              awayWins: h2hSummary.teamBWins,
+              draws: h2hSummary.draws,
+              avgGoals: average(h2hSummary.totalGoals, h2hSummary.played),
+              bothScored: h2hSummary.bothScored,
+              over25: h2hSummary.over25,
+            })}
           </p>
           <ul className="mt-4 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
             {h2hMatches.slice(0, 8).map((f) => (
@@ -278,11 +288,11 @@ export default async function MatchPage({ params }: Props) {
       {(homeForm.length > 0 || awayForm.length > 0) && (
         <section aria-labelledby="form" className="mt-10">
           <h2 id="form" className="text-lg font-bold">
-            Recent form
+            {text.t("match.formHeading")}
           </h2>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <FormCard team={home.name} entries={homeForm} />
-            <FormCard team={away.name} entries={awayForm} />
+            <FormCard team={home.name} entries={homeForm} emptyText={text.t("match.noRecent")} />
+            <FormCard team={away.name} entries={awayForm} emptyText={text.t("match.noRecent")} />
           </div>
         </section>
       )}
@@ -290,12 +300,13 @@ export default async function MatchPage({ params }: Props) {
       {(homeRow || awayRow) && (
         <section aria-labelledby="standings" className="mt-10">
           <h2 id="standings" className="text-lg font-bold">
-            League position{match.league.name ? ` – ${match.league.name}` : ""}
+            {text.t("match.positionHeading")}
+            {match.league.name ? ` – ${match.league.name}` : ""}
           </h2>
           <StandingsTable rows={[homeRow, awayRow].filter((r): r is StandingRow => Boolean(r))} />
           {competition && (
             <Link href={`/competitions/${competition.slug}`} className="mt-2 inline-block text-sm font-medium text-brand hover:underline">
-              Full {competition.name} table and predictions →
+              {text.t("match.fullTable", { competition: competition.name })}
             </Link>
           )}
         </section>
@@ -306,13 +317,13 @@ export default async function MatchPage({ params }: Props) {
           {relatedFixtures.length > 0 && (
             <div>
               <h2 id="related" className="text-lg font-bold">
-                More {match.league.name ?? ""} predictions
+                {text.t("match.morePredictions", { league: match.league.name ?? "" }).replace(/\s+/g, " ")}
               </h2>
               <ul className="mt-3 space-y-2 text-sm">
                 {relatedFixtures.map((p) => (
                   <li key={p.id}>
                     <Link href={predictionHref(p)} className="font-medium text-brand hover:underline">
-                      {p.home_team} vs {p.away_team} prediction
+                      {text.t("match.relatedLink", { fixture: `${p.home_team} vs ${p.away_team}` })}
                     </Link>
                     <span className="ml-2 text-xs text-muted-foreground">{formatShortDate(p.kickoff_time)}</span>
                   </li>
@@ -322,12 +333,12 @@ export default async function MatchPage({ params }: Props) {
           )}
           {marketPages.length > 0 && (
             <div>
-              <h2 className="text-lg font-bold">Markets for this match</h2>
+              <h2 className="text-lg font-bold">{text.t("match.marketsHeading")}</h2>
               <ul className="mt-3 space-y-2 text-sm">
                 {marketPages.map((page) => (
                   <li key={page.slug}>
                     <Link href={`/tips/${page.slug}`} className="font-medium text-brand hover:underline">
-                      {page.h1}
+                      {plainTextOf(page.h1)}
                     </Link>
                   </li>
                 ))}
@@ -468,7 +479,7 @@ const FORM_STYLES = {
   L: "bg-red-500/15 text-red-700 dark:text-red-400",
 } as const;
 
-function FormCard({ team, entries }: { team: string; entries: FormEntry[] }) {
+function FormCard({ team, entries, emptyText }: { team: string; entries: FormEntry[]; emptyText: string }) {
   const summary = summarizeForm(entries);
   return (
     <div className="rounded-2xl border border-border bg-card p-4">
@@ -502,7 +513,7 @@ function FormCard({ team, entries }: { team: string; entries: FormEntry[] }) {
           </p>
         </>
       ) : (
-        <p className="mt-3 text-sm text-muted-foreground">No recent results available.</p>
+        <p className="mt-3 text-sm text-muted-foreground">{emptyText}</p>
       )}
     </div>
   );

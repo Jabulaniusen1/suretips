@@ -6,7 +6,9 @@ import { after } from "next/server";
 import type { Metadata } from "next";
 import { getPostBySlug, getRelatedPosts, recordPostView } from "@/lib/data/blog";
 import { getActiveCompetitions } from "@/lib/data/competitions";
-import { MARKET_PAGES } from "@/lib/seo/market-pages";
+import type { MarketPage } from "@/lib/seo/market-pages";
+import { getMarketPagesWithText, getSiteText } from "@/lib/content/site-text";
+import { plainTextOf } from "@/lib/content/plain-text";
 import { formatShortDate } from "@/lib/utils/date";
 import { blogPostingJsonLd, pageMetadata, stripHtml, truncateDescription, SITE_NAME } from "@/lib/seo";
 import { sanitizeHtml } from "@/lib/sanitize-html";
@@ -41,9 +43,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 /** Market pages whose topic the article mentions, for contextual internal links. */
-function relatedMarketPages(text: string) {
+function relatedMarketPages(pages: MarketPage[], text: string) {
   const haystack = text.toLowerCase();
-  return MARKET_PAGES.filter((page) =>
+  return pages.filter((page) =>
     [page.primaryKeyword, page.tabLabel, ...page.supportingKeywords].some((k) => k.length > 3 && haystack.includes(k.toLowerCase().replace(/ today$/, "")))
   ).slice(0, 4);
 }
@@ -55,11 +57,16 @@ export default async function BlogPostPage({ params }: Props) {
 
   after(() => recordPostView(post.id));
 
-  const [related, competitions] = await Promise.all([getRelatedPosts(post), getActiveCompetitions()]);
+  const [related, competitions, siteText, marketPages] = await Promise.all([
+    getRelatedPosts(post),
+    getActiveCompetitions(),
+    getSiteText(),
+    getMarketPagesWithText(),
+  ]);
   const competition = post.competition_id ? competitions.find((c) => c.id === post.competition_id) : undefined;
   const html = sanitizeHtml(post.content ?? "");
   const plain = stripHtml(html);
-  const markets = relatedMarketPages(`${post.title} ${post.tags.join(" ")} ${plain}`);
+  const markets = relatedMarketPages(marketPages.pages, `${post.title} ${post.tags.join(" ")} ${plain}`);
   const published = post.published_at ?? post.created_at;
   const updated = post.updated_at;
   const wasUpdated = new Date(updated).getTime() - new Date(published).getTime() > 24 * 60 * 60 * 1000;
@@ -124,20 +131,20 @@ export default async function BlogPostPage({ params }: Props) {
       {(markets.length > 0 || competition) && (
         <aside aria-labelledby="related-predictions" className="mt-10 rounded-2xl border border-border bg-card p-5">
           <h2 id="related-predictions" className="font-bold">
-            Related predictions
+            {siteText.t("blog.relatedPredictions")}
           </h2>
           <ul className="mt-3 space-y-2 text-sm">
             {competition && (
               <li>
                 <Link href={`/competitions/${competition.slug}`} className="font-medium text-brand hover:underline">
-                  {competition.name} predictions and fixtures
+                  {siteText.t("blog.competitionLink", { competition: competition.name })}
                 </Link>
               </li>
             )}
             {markets.map((page) => (
               <li key={page.slug}>
                 <Link href={`/tips/${page.slug}`} className="font-medium text-brand hover:underline">
-                  {page.h1}
+                  {plainTextOf(page.h1)}
                 </Link>
               </li>
             ))}
@@ -148,7 +155,7 @@ export default async function BlogPostPage({ params }: Props) {
       {related.length > 0 && (
         <section aria-labelledby="related-posts" className="mt-10">
           <h2 id="related-posts" className="text-lg font-bold">
-            Related articles
+            {siteText.t("blog.relatedArticles")}
           </h2>
           <ul className="mt-3 space-y-3">
             {related.map((r) => (

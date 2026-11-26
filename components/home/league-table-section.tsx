@@ -1,5 +1,7 @@
 import { attempt, currentFootballSeason, getStandings } from "@/lib/football-api";
 import { LeagueStandingsTabs } from "@/components/home/league-standings-tabs";
+import { getSiteText } from "@/lib/content/site-text";
+import { InlineContent } from "@/components/content/plain-content";
 
 const LEAGUES = [
   { id: 39, name: "Premier League", slug: "premier-league" },
@@ -17,13 +19,19 @@ export async function LeagueTableSection() {
     }))
   );
   if (leagues.every((l) => !l.standings?.length)) return null;
+  const text = await getSiteText();
+  const intro = text.t("home.tablesIntro");
 
   return (
     <section aria-labelledby="home-tables" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <h2 id="home-tables" className="text-xl font-bold">
-        League tables
+        <InlineContent text={text.t("home.tablesHeading")} />
       </h2>
-      <p className="mt-1 text-sm text-muted-foreground">Current standings in Europe&apos;s top five leagues, from API-Sports.</p>
+      {intro && (
+        <p className="mt-1 text-sm text-muted-foreground">
+          <InlineContent text={intro} />
+        </p>
+      )}
       <div className="mt-5">
         <LeagueStandingsTabs leagues={leagues} />
       </div>

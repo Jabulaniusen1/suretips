@@ -7,6 +7,8 @@ import { BLOG_PAGE_SIZE, getPublishedPosts } from "@/lib/data/blog";
 import { formatShortDate } from "@/lib/utils/date";
 import { pageMetadata } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
+import { InlineContent, PlainContent } from "@/components/content/plain-content";
+import { getSiteText } from "@/lib/content/site-text";
 
 type Props = { searchParams: Promise<{ page?: string }> };
 
@@ -18,11 +20,11 @@ function parsePage(raw?: string): number | null {
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const page = parsePage((await searchParams).page);
   if (!page) notFound();
+  const text = await getSiteText();
   // Each paginated page is its own canonical URL; page 1 is the bare /blog.
   return pageMetadata({
-    title: page > 1 ? `Football Betting Guides & Analysis – Page ${page}` : "Football Betting Guides & Match Analysis",
-    description:
-      "Guides to football betting markets, league analysis and explainers on how predictions, odds and probability work — written to help you bet with your eyes open.",
+    title: page > 1 ? text.t("blog.seoTitlePaged", { page }) : text.t("blog.seoTitle"),
+    description: text.t("blog.seoDescription"),
     path: page > 1 ? `/blog?page=${page}` : "/blog",
   });
 }
@@ -30,21 +32,18 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 export default async function BlogPage({ searchParams }: Props) {
   const page = parsePage((await searchParams).page);
   if (!page) notFound();
-  const { posts, total } = await getPublishedPosts(page);
+  const [{ posts, total }, text] = await Promise.all([getPublishedPosts(page), getSiteText()]);
+  const intro = text.t("blog.intro");
   const totalPages = Math.max(1, Math.ceil(total / BLOG_PAGE_SIZE));
   if (page > totalPages) notFound();
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <Breadcrumbs items={[{ name: "Blog", path: "/blog" }]} />
-      <h1 className="mt-4 text-2xl font-extrabold tracking-tight sm:text-3xl">Football Guides &amp; Analysis</h1>
-      <p className="mt-3 max-w-3xl text-muted-foreground">
-        Explainers on betting markets, league and team analysis, and how to read odds and probability. For today&apos;s picks, see{" "}
-        <Link href="/" className="font-medium text-brand hover:underline">
-          football predictions today
-        </Link>
-        .
-      </p>
+      <Breadcrumbs items={[{ name: text.t("blog.breadcrumb"), path: "/blog" }]} />
+      <h1 className="mt-4 text-2xl font-extrabold tracking-tight sm:text-3xl">
+        <InlineContent text={text.t("blog.h1")} />
+      </h1>
+      {intro && <PlainContent text={intro} className="mt-3 max-w-3xl text-muted-foreground" />}
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {posts.map((post, index) => (
@@ -75,7 +74,11 @@ export default async function BlogPage({ searchParams }: Props) {
           </article>
         ))}
       </div>
-      {posts.length === 0 && <p className="mt-8 text-muted-foreground">No articles have been published yet.</p>}
+      {posts.length === 0 && (
+        <p className="mt-8 text-muted-foreground">
+          <InlineContent text={text.t("blog.empty")} />
+        </p>
+      )}
 
       {totalPages > 1 && (
         <nav aria-label="Blog pages" className="mt-8 flex flex-wrap justify-center gap-2">

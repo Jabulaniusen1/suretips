@@ -11,9 +11,13 @@ import type { Tables } from "@/types/database";
 
 export function MobileNav({
   links,
+  contactLabel,
+  sponsoredLabel,
   adLinks = [],
 }: {
   links: Array<{ href: string; label: string }>;
+  contactLabel: string;
+  sponsoredLabel: string;
   adLinks?: Tables<"ad_links">[];
 }) {
   const [open, setOpen] = useState(false);
@@ -31,7 +35,7 @@ export function MobileNav({
           <ThemeToggle />
         </SheetHeader>
         <nav aria-label="Mobile" className="flex flex-col gap-1 px-4">
-          {[...links, { href: "/contact", label: "Contact" }].map((link) => (
+          {[...links, { href: "/contact", label: contactLabel }].map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -44,7 +48,7 @@ export function MobileNav({
           {adLinks.length > 0 && (
             <>
               <div className="my-2 h-px bg-border" aria-hidden />
-              <p className="px-3 text-[11px] uppercase tracking-wide text-muted-foreground">Sponsored</p>
+              <p className="px-3 text-[11px] uppercase tracking-wide text-muted-foreground">{sponsoredLabel}</p>
               {adLinks.map((link) => (
                 <a
                   key={link.id}

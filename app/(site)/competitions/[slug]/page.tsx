@@ -19,12 +19,13 @@ import {
 } from "@/lib/football-api";
 import { addDaysToKey, formatDayMonth, formatKickoffTime, formatShortDate, lagosDateKey } from "@/lib/utils/date";
 import { itemListJsonLd, pageMetadata, truncateDescription } from "@/lib/seo";
-import { getMarketPage } from "@/lib/seo/market-pages";
+import { getMarketPagesWithText, getSiteText } from "@/lib/content/site-text";
+import { plainTextOf } from "@/lib/content/plain-text";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { PredictionList, ResultBadge, predictionHref } from "@/components/predictions/prediction-list";
 import { ResultsSummary } from "@/components/predictions/results-summary";
-import { PlainContent } from "@/components/content/plain-content";
+import { InlineContent, PlainContent } from "@/components/content/plain-content";
 import { ResponsibleNotice } from "@/components/site/responsible-notice";
 
 export const revalidate = 600;
@@ -71,7 +72,7 @@ export default async function CompetitionPage({ params }: Props) {
   const season = competition.current_season ?? currentFootballSeason(leagueId);
   const today = lagosDateKey();
 
-  const [fixtures, standings, windows, recentResults, posts] = await Promise.all([
+  const [fixtures, standings, windows, recentResults, posts, text, markets] = await Promise.all([
     leagueId
       ? attempt(`league fixtures ${leagueId}`, () => getLeagueFixtures(leagueId, season, addDaysToKey(today, -7), addDaysToKey(today, 10)), [] as FixtureSummary[])
       : Promise.resolve({ data: [] as FixtureSummary[], failed: false }),
@@ -79,7 +80,11 @@ export default async function CompetitionPage({ params }: Props) {
     leagueId ? getResultWindows(null, leagueId) : Promise.resolve(null),
     leagueId ? getRecentVerifiedResults({ leagueId, limit: 6 }) : Promise.resolve([]),
     getPostsForCompetition(competition.id, 3),
+    getSiteText(),
+    getMarketPagesWithText(),
   ]);
+  const vars = { competition: competition.name };
+  const recordIntro = text.t("comp.recordIntro", vars);
 
   const predictedFixtureIds = new Set(predictions.map((p) => p.external_fixture_id).filter(Boolean));
   const upcoming = fixtures.data
@@ -92,11 +97,11 @@ export default async function CompetitionPage({ params }: Props) {
     .slice(0, 10);
 
   const heading = competition.heading || `${competition.name} Predictions`;
-  const marketPages = COMPETITION_MARKETS.map(getMarketPage).filter((p) => p !== undefined);
+  const marketPages = COMPETITION_MARKETS.map(markets.bySlug).filter((p) => p !== undefined);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      <Breadcrumbs items={[{ name: "Competitions", path: "/competitions" }, { name: competition.name, path: `/competitions/${slug}` }]} />
+      <Breadcrumbs items={[{ name: text.t("comps.breadcrumb"), path: "/competitions" }, { name: competition.name, path: `/competitions/${slug}` }]} />
       <JsonLd
         data={itemListJsonLd(
           `${competition.name} predictions`,
@@ -136,33 +141,24 @@ export default async function CompetitionPage({ params }: Props) {
         <div className="space-y-10 lg:col-span-2">
           <section aria-labelledby="comp-predictions">
             <h2 id="comp-predictions" className="text-lg font-bold">
-              Upcoming {competition.name} predictions
+              <InlineContent text={text.t("comp.upcomingHeading", vars)} />
             </h2>
             <div className="mt-3">
               <PredictionList
                 predictions={predictions}
                 showDate
                 groupByCompetition={false}
-                emptyState={
-                  <>
-                    No {competition.name} predictions are published for the coming days yet. Picks are added the day before kickoff —
-                    meanwhile see the fixtures below or{" "}
-                    <Link href="/" className="font-medium text-brand hover:underline">
-                      today&apos;s predictions
-                    </Link>
-                    .
-                  </>
-                }
+                emptyState={<InlineContent text={text.t("comp.noPredictions", vars)} />}
               />
             </div>
           </section>
 
           <section aria-labelledby="fixtures">
             <h2 id="fixtures" className="text-lg font-bold">
-              {competition.name} fixtures
+              <InlineContent text={text.t("comp.fixturesHeading", vars)} />
             </h2>
             {fixtures.failed ? (
-              <p className="mt-2 text-sm text-muted-foreground">Fixtures are temporarily unavailable from our data provider.</p>
+              <p className="mt-2 text-sm text-muted-foreground">{text.t("comp.fixturesUnavailable")}</p>
             ) : upcoming.length > 0 ? (
               <ul className="mt-3 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
                 {upcoming.map((f) => (
@@ -177,21 +173,21 @@ export default async function CompetitionPage({ params }: Props) {
                         {f.teams.home.name} vs {f.teams.away.name}
                       </span>
                       {predictedFixtureIds.has(f.fixture.id) && (
-                        <span className="shrink-0 rounded-md bg-brand/10 px-2 py-0.5 text-[11px] font-semibold text-brand">Tips</span>
+                        <span className="shrink-0 rounded-md bg-brand/10 px-2 py-0.5 text-[11px] font-semibold text-brand">{text.t("comp.tipsBadge")}</span>
                       )}
                     </Link>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="mt-2 text-sm text-muted-foreground">No {competition.name} fixtures are scheduled in the next ten days.</p>
+              <p className="mt-2 text-sm text-muted-foreground">{text.t("comp.noFixtures", vars)}</p>
             )}
           </section>
 
           {recent.length > 0 && (
             <section aria-labelledby="recent-fixtures">
               <h2 id="recent-fixtures" className="text-lg font-bold">
-                Recent {competition.name} results
+                <InlineContent text={text.t("comp.recentHeading", vars)} />
               </h2>
               <ul className="mt-3 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
                 {recent.map((f) => (
@@ -217,12 +213,12 @@ export default async function CompetitionPage({ params }: Props) {
           {windows && (
             <section aria-labelledby="comp-record">
               <h2 id="comp-record" className="text-lg font-bold">
-                Our {competition.name} record
+                <InlineContent text={text.t("comp.recordHeading", vars)} />
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">Verified results of every {competition.name} tip we have published.</p>
+              {recordIntro && <p className="mt-1 text-sm text-muted-foreground">{recordIntro}</p>}
               <div className="mt-3 space-y-4">
-                <ResultsSummary title="Last 30 days" summary={windows.last30} />
-                <ResultsSummary title="All time" summary={windows.allTime} />
+                <ResultsSummary title={text.t("results.last30")} summary={windows.last30} />
+                <ResultsSummary title={text.t("results.allTime")} summary={windows.allTime} />
               </div>
               {recentResults.length > 0 && (
                 <ul className="mt-4 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
@@ -247,24 +243,24 @@ export default async function CompetitionPage({ params }: Props) {
           {standings.data.length > 0 && (
             <section aria-labelledby="table">
               <h2 id="table" className="text-lg font-bold">
-                {competition.name} table
+                <InlineContent text={text.t("comp.tableHeading", vars)} />
               </h2>
               {standings.data.slice(0, 4).map((group, i) => (
                 <StandingsGroup key={i} rows={group} compact={standings.data.length > 1} />
               ))}
             </section>
           )}
-          {standings.failed && <p className="text-sm text-muted-foreground">The league table is temporarily unavailable.</p>}
+          {standings.failed && <p className="text-sm text-muted-foreground">{text.t("comp.tableUnavailable")}</p>}
 
           <section aria-labelledby="comp-markets">
             <h2 id="comp-markets" className="text-lg font-bold">
-              Betting markets
+              <InlineContent text={text.t("comp.marketsHeading")} />
             </h2>
             <ul className="mt-3 space-y-2 text-sm">
               {marketPages.map((page) => (
                 <li key={page.slug}>
                   <Link href={`/tips/${page.slug}`} className="font-medium text-brand hover:underline">
-                    {page.h1}
+                    {plainTextOf(page.h1)}
                   </Link>
                 </li>
               ))}
@@ -274,7 +270,7 @@ export default async function CompetitionPage({ params }: Props) {
           {posts.length > 0 && (
             <section aria-labelledby="comp-posts">
               <h2 id="comp-posts" className="text-lg font-bold">
-                {competition.name} analysis
+                <InlineContent text={text.t("comp.postsHeading", vars)} />
               </h2>
               <ul className="mt-3 space-y-2 text-sm">
                 {posts.map((post) => (

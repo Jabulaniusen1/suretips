@@ -1,4 +1,6 @@
 import { JsonLd } from "@/components/seo/json-ld";
+import { PlainContent } from "@/components/content/plain-content";
+import { plainTextOf } from "@/lib/content/plain-text";
 import { faqJsonLd } from "@/lib/seo";
 import type { FaqItem } from "@/types/database";
 
@@ -17,11 +19,12 @@ export function FaqSection({ items, heading = "Frequently asked questions" }: { 
             <summary className="cursor-pointer list-none font-medium">
               <h3 className="inline">{item.question}</h3>
             </summary>
-            <p className="mt-2 text-sm text-muted-foreground">{item.answer}</p>
+            {/* Answers may use the plain-text format (bold, links, lists); structured data gets plain text. */}
+            <PlainContent text={item.answer} className="mt-2 text-sm text-muted-foreground" />
           </details>
         ))}
       </div>
-      <JsonLd data={faqJsonLd(valid)} />
+      <JsonLd data={faqJsonLd(valid.map((i) => ({ question: i.question, answer: plainTextOf(i.answer) })))} />
     </section>
   );
 }

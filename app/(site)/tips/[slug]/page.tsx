@@ -24,7 +24,10 @@ import { DateNav } from "@/components/predictions/date-nav";
 import { PredictionList, ResultBadge, predictionHref } from "@/components/predictions/prediction-list";
 import { ResultsSummary } from "@/components/predictions/results-summary";
 import { FaqSection } from "@/components/content/faq-section";
-import { PlainContent } from "@/components/content/plain-content";
+import { InlineContent, PlainContent } from "@/components/content/plain-content";
+import { getMarketPagesWithText, getSiteText } from "@/lib/content/site-text";
+import type { SiteText } from "@/lib/content/registry";
+import { plainTextOf } from "@/lib/content/plain-text";
 import { ResponsibleNotice } from "@/components/site/responsible-notice";
 import type { Tables } from "@/types/database";
 
@@ -55,14 +58,14 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const { period, date } = await searchParams;
   const otherDay = isOtherDayView(period, date);
 
-  const builtIn = getMarketPage(slug);
+  const builtIn = (await getMarketPagesWithText()).bySlug(slug);
   if (builtIn) {
     const market = applyMarketPageOverride(builtIn, await getMarketPageOverride(slug));
     return pageMetadata({
       title: market.title,
       description: truncateDescription(market.description),
       path: `/tips/${slug}`,
-      image: market.ogImage ? { url: market.ogImage, alt: market.h1 } : undefined,
+      image: market.ogImage ? { url: market.ogImage, alt: plainTextOf(market.h1) } : undefined,
       noIndex: market.noIndex || otherDay,
       keywords: parseKeywords(market.metaKeywords),
     });
@@ -86,7 +89,7 @@ export default async function TipsMarketPage({ params, searchParams }: Props) {
   const { period, date } = await searchParams;
   const range = getDateRange(period, date);
 
-  const builtIn = getMarketPage(slug);
+  const builtIn = (await getMarketPagesWithText()).bySlug(slug);
   if (builtIn) {
     const market = applyMarketPageOverride(builtIn, await getMarketPageOverride(slug));
     return <BuiltInMarketPage page={market} range={range} />;
@@ -107,26 +110,33 @@ async function BuiltInMarketPage({ page, range }: { page: ResolvedMarketPage; ra
   const marketKey = singleMarket(page);
   const marketList = page.selection.kind === "markets" ? page.selection.markets : undefined;
 
-  const [dayPredictions, windows, recent, competitionsByLeague] = await Promise.all([
+  const [dayPredictions, windows, recent, competitionsByLeague, text, markets] = await Promise.all([
     getPredictionsForDay(range.dateKey),
     getResultWindows(marketKey),
     getRecentVerifiedResults({ markets: marketList, limit: 8 }),
     getCompetitionsByLeagueId(),
+    getSiteText(),
+    getMarketPagesWithText(),
   ]);
 
   const predictions = applyMarketSelection(dayPredictions, page.selection);
   const isToday = range.dateKey === lagosDateKey();
-  const statsLabel = marketKey ? MARKET_LABELS[marketKey] : "all published tips";
+  const statsLabel = marketKey ? MARKET_LABELS[marketKey] : text.t("marketPage.allTipsLabel");
+  const market = plainTextOf(page.tabLabel);
+  const methodologyLink = text.t("marketPage.methodologyLink");
+  const recordIntro = text.t("marketPage.recordIntro", { market: statsLabel });
   const relatedCompetitions = [...new Set(predictions.map((p) => p.league_id).filter((id): id is number => Boolean(id)))]
     .map((id) => competitionsByLeague.get(id))
     .filter((c): c is Tables<"competitions"> => Boolean(c));
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-      <Breadcrumbs items={[{ name: "Tips by market", path: "/tips" }, { name: page.tabLabel, path: `/tips/${page.slug}` }]} />
+      <Breadcrumbs items={[{ name: text.t("tips.breadcrumb"), path: "/tips" }, { name: market, path: `/tips/${page.slug}` }]} />
 
       <header className="mt-4">
-        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{page.h1}</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+          <InlineContent text={page.h1} />
+        </h1>
         <PlainContent text={page.intro} className="mt-3 max-w-3xl text-muted-foreground" />
       </header>
 
@@ -138,7 +148,7 @@ async function BuiltInMarketPage({ page, range }: { page: ResolvedMarketPage; ra
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 id="picks" className="text-lg font-bold">
-              {isToday ? `Today's ${page.tabLabel} picks` : `${page.tabLabel} picks for ${range.label}`}
+              <InlineContent text={isToday ? text.t("marketPage.todayPicks", { market }) : text.t("marketPage.datePicks", { market, date: range.label })} />
             </h2>
             <p className="text-sm text-muted-foreground">{range.label}</p>
           </div>
@@ -148,20 +158,16 @@ async function BuiltInMarketPage({ page, range }: { page: ResolvedMarketPage; ra
           <PredictionList
             predictions={predictions}
             groupByCompetition={!isRankedSelection(page.selection)}
-            emptyState={<MarketEmptyState page={page} range={range} />}
+            emptyState={<MarketEmptyState page={page} range={range} text={text} />}
           />
         </div>
       </section>
 
       <section aria-labelledby="explainer" className="mt-10">
         <h2 id="explainer" className="text-lg font-bold">
-          {page.explainer.heading}
+          <InlineContent text={page.explainer.heading} />
         </h2>
-        {page.explainer.paragraphs.map((p) => (
-          <p key={p} className="mt-3 text-muted-foreground">
-            {p}
-          </p>
-        ))}
+        <PlainContent text={page.explainer.paragraphs.join("\n\n")} className="mt-3 space-y-3 text-muted-foreground" />
       </section>
 
       {page.mainContent && <PlainContent text={page.mainContent} className="mt-6 text-muted-foreground" />}
@@ -169,26 +175,30 @@ async function BuiltInMarketPage({ page, range }: { page: ResolvedMarketPage; ra
       <div className="mt-10 grid gap-8 md:grid-cols-2">
         <section aria-labelledby="how-selected">
           <h2 id="how-selected" className="text-lg font-bold">
-            How these picks are selected
+            <InlineContent text={text.t("marketPage.howSelectedHeading")} />
           </h2>
           <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
             {page.howSelected.map((item) => (
-              <li key={item}>{item}</li>
+              <li key={item}>
+                <InlineContent text={item} />
+              </li>
             ))}
           </ul>
-          <p className="mt-3 text-sm">
-            <Link href="/methodology" className="font-medium text-brand hover:underline">
-              Full prediction methodology
-            </Link>
-          </p>
+          {methodologyLink && (
+            <p className="mt-3 text-sm">
+              <InlineContent text={methodologyLink} />
+            </p>
+          )}
         </section>
         <section aria-labelledby="factors">
           <h2 id="factors" className="text-lg font-bold">
-            What to consider
+            <InlineContent text={text.t("marketPage.factorsHeading")} />
           </h2>
           <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
             {page.factors.map((item) => (
-              <li key={item}>{item}</li>
+              <li key={item}>
+                <InlineContent text={item} />
+              </li>
             ))}
           </ul>
         </section>
@@ -196,67 +206,54 @@ async function BuiltInMarketPage({ page, range }: { page: ResolvedMarketPage; ra
 
       <section aria-labelledby="performance" className="mt-10">
         <h2 id="performance" className="text-lg font-bold">
-          {marketKey ? `${MARKET_LABELS[marketKey]} results record` : "Results record"}
+          <InlineContent text={marketKey ? text.t("marketPage.recordHeading", { market: statsLabel }) : text.t("marketPage.recordHeadingAll")} />
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Verified results for {statsLabel}. Win rate excludes void bets; only results checked by an editor are counted.
-        </p>
+        {recordIntro && (
+          <p className="mt-1 text-sm text-muted-foreground">
+            <InlineContent text={recordIntro} />
+          </p>
+        )}
         <div className="mt-4 space-y-4">
-          <ResultsSummary title="Last 30 days" summary={windows.last30} />
-          <ResultsSummary title="All time" summary={windows.allTime} />
+          <ResultsSummary title={text.t("results.last30")} summary={windows.last30} />
+          <ResultsSummary title={text.t("results.allTime")} summary={windows.allTime} />
         </div>
-        {recent.length > 0 && <RecentResults rows={recent} />}
+        {recent.length > 0 && <RecentResults rows={recent} heading={text.t("marketPage.latestResults")} />}
         <p className="mt-3 text-sm">
           <Link
             href={marketKey ? `/previous-results?market=${marketKey}` : "/previous-results"}
             className="font-medium text-brand hover:underline"
           >
-            See every {statsLabel} result
+            {text.t("marketPage.seeAll", { market: statsLabel })}
           </Link>
         </p>
       </section>
 
       <section aria-labelledby="limitations" className="mt-10 rounded-2xl border border-border bg-muted/40 p-5">
         <h2 id="limitations" className="font-bold">
-          Limitations
+          <InlineContent text={text.t("marketPage.limitationsHeading")} />
         </h2>
-        <p className="mt-2 text-sm text-muted-foreground">{page.limitations}</p>
+        <PlainContent text={page.limitations} className="mt-2 text-sm text-muted-foreground" />
       </section>
 
-      <FaqSection items={page.faqs} heading={`${page.tabLabel}: frequently asked questions`} />
+      <FaqSection items={page.faqs} heading={text.t("marketPage.faqHeading", { market })} />
 
-      <RelatedLinks page={page} competitions={relatedCompetitions} />
+      <RelatedLinks page={page} competitions={relatedCompetitions} text={text} related={page.related.map(markets.bySlug).filter((p): p is MarketPage => Boolean(p))} />
 
       <ResponsibleNotice className="mt-10" />
     </div>
   );
 }
 
-function MarketEmptyState({ page, range }: { page: MarketPage; range: DateRange }) {
-  return (
-    <>
-      No {page.tabLabel} picks have been published for {range.label}.{" "}
-      {page.selection.kind === "super-single"
-        ? "A super single is only published when a pick qualifies. "
-        : "New picks are usually added the day before kickoff. "}
-      Try{" "}
-      <Link href={`/tips/${page.slug}?period=tomorrow`} className="font-medium text-brand hover:underline">
-        tomorrow
-      </Link>
-      , or browse{" "}
-      <Link href="/" className="font-medium text-brand hover:underline">
-        all of today&apos;s predictions
-      </Link>
-      .
-    </>
-  );
+function MarketEmptyState({ page, range, text }: { page: MarketPage; range: DateRange; text: SiteText }) {
+  const key = page.selection.kind === "super-single" ? "marketPage.emptySuperSingle" : "marketPage.empty";
+  return <InlineContent text={text.t(key, { market: plainTextOf(page.tabLabel), date: range.label, tomorrowLink: `/tips/${page.slug}?period=tomorrow` })} />;
 }
 
-function RecentResults({ rows }: { rows: PublicPrediction[] }) {
+function RecentResults({ rows, heading }: { rows: PublicPrediction[]; heading: string }) {
   return (
     <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-card">
       <h3 className="border-b border-border bg-muted/40 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Latest verified results
+        {heading}
       </h3>
       <ul className="divide-y divide-border">
         {rows.map((r) => (
@@ -280,43 +277,50 @@ function RecentResults({ rows }: { rows: PublicPrediction[] }) {
   );
 }
 
-function RelatedLinks({ page, competitions }: { page: MarketPage; competitions: Tables<"competitions">[] }) {
-  const related = page.related.map(getMarketPage).filter((p): p is MarketPage => Boolean(p));
+function RelatedLinks({
+  page,
+  competitions,
+  related,
+  text,
+}: {
+  page: MarketPage;
+  competitions: Tables<"competitions">[];
+  related: MarketPage[];
+  text: SiteText;
+}) {
   return (
     <section aria-labelledby="related" className="mt-10 grid gap-8 md:grid-cols-2">
       <div>
         <h2 id="related" className="text-lg font-bold">
-          Related markets
+          <InlineContent text={text.t("marketPage.relatedHeading")} />
         </h2>
         <ul className="mt-3 space-y-2 text-sm">
           {related.map((r) => (
             <li key={r.slug}>
               <Link href={`/tips/${r.slug}`} className="font-medium text-brand hover:underline">
-                {r.h1}
+                {plainTextOf(r.h1)}
               </Link>
             </li>
           ))}
         </ul>
       </div>
       <div>
-        <h2 className="text-lg font-bold">Competitions with {page.tabLabel} picks</h2>
+        <h2 className="text-lg font-bold">
+          <InlineContent text={text.t("marketPage.competitionsHeading", { market: plainTextOf(page.tabLabel) })} />
+        </h2>
         {competitions.length > 0 ? (
           <ul className="mt-3 space-y-2 text-sm">
             {competitions.map((c) => (
               <li key={c.id}>
                 <Link href={`/competitions/${c.slug}`} className="font-medium text-brand hover:underline">
-                  {c.name} predictions
+                  {text.t("marketPage.competitionLink", { competition: c.name })}
                 </Link>
               </li>
             ))}
           </ul>
         ) : (
           <p className="mt-3 text-sm text-muted-foreground">
-            None of the competitions we cover in depth have a pick on this date.{" "}
-            <Link href="/competitions" className="font-medium text-brand hover:underline">
-              Browse all competitions
-            </Link>
-            .
+            <InlineContent text={text.t("marketPage.noCompetitions")} />
           </p>
         )}
       </div>
@@ -328,7 +332,7 @@ function RelatedLinks({ page, competitions }: { page: MarketPage; competitions: 
 
 async function CustomSeoPage({ page, range }: { page: Tables<"custom_pages">; range: DateRange }) {
   const selection = customPageSelection(page.filter_id);
-  const dayPredictions = await getPredictionsForDay(range.dateKey);
+  const [dayPredictions, text] = await Promise.all([getPredictionsForDay(range.dateKey), getSiteText()]);
   const predictions = selection ? applyMarketSelection(dayPredictions, selection) : dayPredictions;
   const heading = page.heading || page.title;
   const intro = page.introduction || page.description;
@@ -336,7 +340,7 @@ async function CustomSeoPage({ page, range }: { page: Tables<"custom_pages">; ra
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-      <Breadcrumbs items={[{ name: "Tips by market", path: "/tips" }, { name: page.title, path: `/tips/${page.slug}` }]} />
+      <Breadcrumbs items={[{ name: text.t("tips.breadcrumb"), path: "/tips" }, { name: page.title, path: `/tips/${page.slug}` }]} />
       <header className="mt-4">
         <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{heading}</h1>
         {page.subheading && <p className="mt-2 font-medium text-muted-foreground">{page.subheading}</p>}
@@ -346,12 +350,12 @@ async function CustomSeoPage({ page, range }: { page: Tables<"custom_pages">; ra
       <section aria-labelledby="picks" className="mt-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <h2 id="picks" className="text-lg font-bold">
-            Picks for {range.label}
+            <InlineContent text={text.t("seoPage.picks", { date: range.label })} />
           </h2>
           <DateNav active={range.period} basePath={`/tips/${page.slug}`} dateKey={range.dateKey} dateLabel={range.label} />
         </div>
         <div className="mt-4">
-          <PredictionList predictions={predictions} emptyState={<>No matching picks have been published for {range.label} yet.</>} />
+          <PredictionList predictions={predictions} emptyState={<InlineContent text={text.t("seoPage.empty", { date: range.label })} />} />
         </div>
       </section>
 
@@ -362,7 +366,7 @@ async function CustomSeoPage({ page, range }: { page: Tables<"custom_pages">; ra
       {relatedLinks.length > 0 && (
         <section aria-labelledby="related" className="mt-10">
           <h2 id="related" className="text-lg font-bold">
-            Related pages
+            <InlineContent text={text.t("seoPage.related")} />
           </h2>
           <ul className="mt-3 space-y-2 text-sm">
             {relatedLinks.map((l) => (

@@ -14,6 +14,7 @@ import {
   Newspaper,
   Settings,
   Shield,
+  Type,
   // Users, // Users nav item hidden
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,7 @@ const NAV: Array<{ href: string; label: string; icon: typeof LayoutDashboard; ex
   // still work if you open them directly.
   // { href: "/admin/predictions", label: "Predictions", icon: ListChecks },
   // { href: "/admin/results", label: "Results", icon: CheckCheck, badgeKey: "results" },
+  { href: "/admin/content", label: "Site Content", icon: Type },
   { href: "/admin/blog", label: "Blog", icon: Newspaper },
   { href: "/admin/pages", label: "SEO Pages", icon: FileText },
   { href: "/admin/competitions", label: "Competitions", icon: Shield },
@@ -38,7 +40,7 @@ const NAV: Array<{ href: string; label: string; icon: typeof LayoutDashboard; ex
   // { href: "/admin/users", label: "Users", icon: Users },
   // Support chat needs user accounts, which are turned off (see app/admin/_chat).
   // { href: "/admin/chat", label: "Chat", icon: MessageCircle, badgeKey: "chat" },
-  { href: "/admin/config", label: "Config", icon: Settings },
+  { href: "/admin/config", label: "Links & Contact", icon: Settings },
 ];
 
 function isActive(pathname: string, item: (typeof NAV)[number]) {

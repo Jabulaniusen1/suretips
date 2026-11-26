@@ -2,7 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { getMarketBreakdown, getResultLeagues, getResultWindows, getVerifiedResults } from "@/lib/data/results";
 import { ACTIVE_MARKET_KEYS, MARKET_LABELS, isMarketEnabled, isMarketKey } from "@/lib/predictions/markets";
-import { marketPageForMarket } from "@/lib/seo/market-pages";
+import { InlineContent, PlainContent } from "@/components/content/plain-content";
+import { getMarketPagesWithText, getSiteText } from "@/lib/content/site-text";
 import { formatWinRate } from "@/lib/predictions/stats";
 import { formatShortDate, parseDateKey } from "@/lib/utils/date";
 import { pageMetadata } from "@/lib/seo";
@@ -32,10 +33,10 @@ function parseFilters(sp: SearchParams) {
 export async function generateMetadata({ searchParams }: { searchParams: Promise<SearchParams> }): Promise<Metadata> {
   const filters = parseFilters(await searchParams);
   const filtered = Boolean(filters.dateKey || filters.market || filters.leagueId || filters.result || filters.page > 1);
+  const text = await getSiteText();
   return pageMetadata({
-    title: "Previous Results – Verified Football Prediction Record",
-    description:
-      "Every free prediction Sure Match Tips has published and how it settled — wins, losses and void bets — with win rates for the last 7 days, 30 days and all time.",
+    title: text.t("results.seoTitle"),
+    description: text.t("results.seoDescription"),
     path: "/previous-results",
     // Filtered and paginated views are useful to visitors but are not separate pages for search.
     noIndex: filtered,
@@ -44,12 +45,16 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
 
 export default async function PreviousResultsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const filters = parseFilters(await searchParams);
-  const [windows, breakdown, leagues, list] = await Promise.all([
+  const [windows, breakdown, leagues, list, text, markets] = await Promise.all([
     getResultWindows(filters.market, filters.leagueId),
     getMarketBreakdown(90),
     getResultLeagues(),
     getVerifiedResults({ ...filters, pageSize: PAGE_SIZE }),
+    getSiteText(),
+    getMarketPagesWithText(),
   ]);
+  const intro = text.t("results.intro");
+  const winRateNote = text.t("results.winRateNote");
 
   const totalPages = Math.max(1, Math.ceil(list.total / PAGE_SIZE));
   const scope = [filters.market ? MARKET_LABELS[filters.market] : null, leagues.find((l) => l.leagueId === filters.leagueId)?.league]
@@ -69,34 +74,32 @@ export default async function PreviousResultsPage({ searchParams }: { searchPara
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      <Breadcrumbs items={[{ name: "Previous results", path: "/previous-results" }]} />
-      <h1 className="mt-4 text-2xl font-extrabold tracking-tight sm:text-3xl">Previous Results</h1>
-      <p className="mt-3 max-w-3xl text-muted-foreground">
-        A complete, public record of the predictions we have published and how they settled — losses included. Picks are shown
-        exactly as published before kickoff, and graded automatically against the official final score.{" "}
-        <Link href="/methodology#results" className="font-medium text-brand hover:underline">
-          How results are verified
-        </Link>
-      </p>
+      <Breadcrumbs items={[{ name: text.t("results.breadcrumb"), path: "/previous-results" }]} />
+      <h1 className="mt-4 text-2xl font-extrabold tracking-tight sm:text-3xl">
+        <InlineContent text={text.t("results.h1")} />
+      </h1>
+      {intro && <PlainContent text={intro} className="mt-3 max-w-3xl text-muted-foreground" />}
 
       <section aria-labelledby="stats" className="mt-8">
         <h2 id="stats" className="text-lg font-bold">
-          Performance{scope ? ` · ${scope}` : ""}
+          {text.t("results.performance")}
+          {scope ? ` · ${scope}` : ""}
         </h2>
         <div className="mt-4 space-y-5">
-          <ResultsSummary title="Last 7 days" summary={windows.last7} />
-          <ResultsSummary title="Last 30 days" summary={windows.last30} />
-          <ResultsSummary title="All time" summary={windows.allTime} />
+          <ResultsSummary title={text.t("results.last7")} summary={windows.last7} />
+          <ResultsSummary title={text.t("results.last30")} summary={windows.last30} />
+          <ResultsSummary title={text.t("results.allTime")} summary={windows.allTime} />
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">
-          Win rate = wins ÷ (wins + losses). Void bets (postponed or abandoned matches) are excluded from the rate. Pending covers
-          matches not yet played and picks that can&apos;t be graded from the score.
-        </p>
+        {winRateNote && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            <InlineContent text={winRateNote} />
+          </p>
+        )}
       </section>
 
       <section aria-labelledby="filters" className="mt-10">
         <h2 id="filters" className="text-lg font-bold">
-          Verified results
+          <InlineContent text={text.t("results.listHeading")} />
         </h2>
         <form method="get" action="/previous-results" className="mt-4 grid gap-3 rounded-2xl border border-border bg-card p-4 sm:grid-cols-5">
           <label className="text-xs font-medium text-muted-foreground">
@@ -111,7 +114,7 @@ export default async function PreviousResultsPage({ searchParams }: { searchPara
           <label className="text-xs font-medium text-muted-foreground">
             Competition
             <select name="league" defaultValue={filters.leagueId ?? ""} className="mt-1 block w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground">
-              <option value="">All competitions</option>
+              <option value="">{text.t("results.allCompetitions")}</option>
               {leagues.map((l) => (
                 <option key={l.leagueId} value={l.leagueId}>
                   {l.league}
@@ -122,7 +125,7 @@ export default async function PreviousResultsPage({ searchParams }: { searchPara
           <label className="text-xs font-medium text-muted-foreground">
             Market
             <select name="market" defaultValue={filters.market ?? ""} className="mt-1 block w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground">
-              <option value="">All markets</option>
+              <option value="">{text.t("results.allMarkets")}</option>
               {ACTIVE_MARKET_KEYS.map((m) => (
                 <option key={m} value={m}>
                   {MARKET_LABELS[m]}
@@ -133,7 +136,7 @@ export default async function PreviousResultsPage({ searchParams }: { searchPara
           <label className="text-xs font-medium text-muted-foreground">
             Result
             <select name="result" defaultValue={filters.result ?? ""} className="mt-1 block w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground">
-              <option value="">Any result</option>
+              <option value="">{text.t("results.anyResult")}</option>
               <option value="win">Won</option>
               <option value="loss">Lost</option>
               <option value="push">Void</option>
@@ -150,10 +153,10 @@ export default async function PreviousResultsPage({ searchParams }: { searchPara
         </form>
 
         {list.failed ? (
-          <p className="mt-4 text-sm text-muted-foreground">Results are temporarily unavailable. Please try again shortly.</p>
+          <p className="mt-4 text-sm text-muted-foreground">{text.t("results.unavailable")}</p>
         ) : list.rows.length === 0 ? (
           <p className="mt-4 rounded-2xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-            No verified results match these filters yet.
+            <InlineContent text={text.t("results.empty")} />
           </p>
         ) : (
           <div className="mt-4 overflow-x-auto rounded-2xl border border-border bg-card">
@@ -225,7 +228,7 @@ export default async function PreviousResultsPage({ searchParams }: { searchPara
       {breakdown.length > 0 && (
         <section aria-labelledby="by-market" className="mt-10">
           <h2 id="by-market" className="text-lg font-bold">
-            Results by market (last 90 days)
+            <InlineContent text={text.t("results.byMarket")} />
           </h2>
           <div className="mt-4 overflow-x-auto rounded-2xl border border-border bg-card">
             <table className="w-full text-sm">
@@ -243,7 +246,7 @@ export default async function PreviousResultsPage({ searchParams }: { searchPara
                 {breakdown
                   .sort((a, b) => b.summary.settled - a.summary.settled)
                   .map(({ market, summary }) => {
-                    const page = marketPageForMarket(market);
+                    const page = markets.forMarket(market);
                     return (
                       <tr key={market}>
                         <td className="px-4 py-2.5 font-medium">

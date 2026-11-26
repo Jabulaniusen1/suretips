@@ -5,7 +5,8 @@ import { getPredictionById } from "@/lib/data/predictions";
 import { formatKickoffFull } from "@/lib/utils/date";
 import { pageMetadata } from "@/lib/seo";
 import { marketOf } from "@/lib/predictions/markets";
-import { marketPageForMarket } from "@/lib/seo/market-pages";
+import { getMarketPagesWithText, getSiteText } from "@/lib/content/site-text";
+import { plainTextOf } from "@/lib/content/plain-text";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { PlainContent } from "@/components/content/plain-content";
 import { ResultBadge } from "@/components/predictions/prediction-list";
@@ -44,16 +45,16 @@ export default async function PredictionDetailPage({ params }: Props) {
   if (!prediction) notFound();
   if (prediction.external_fixture_id) permanentRedirect(`/match/${prediction.external_fixture_id}`);
 
+  const [text, markets] = await Promise.all([getSiteText(), getMarketPagesWithText()]);
   const market = marketOf(prediction);
-  const marketPage = market ? marketPageForMarket(market) : undefined;
+  const marketPage = market ? markets.forMarket(market) : undefined;
+  const fixture = `${prediction.home_team} vs ${prediction.away_team}`;
   const hasScore = prediction.home_score !== null && prediction.away_score !== null;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
-      <Breadcrumbs items={[{ name: "Predictions", path: "/predictions" }, { name: `${prediction.home_team} vs ${prediction.away_team}`, path: `/predictions/${id}` }]} />
-      <h1 className="mt-4 text-2xl font-extrabold tracking-tight">
-        {prediction.home_team} vs {prediction.away_team} Prediction
-      </h1>
+      <Breadcrumbs items={[{ name: text.t("prediction.breadcrumb"), path: "/predictions" }, { name: fixture, path: `/predictions/${id}` }]} />
+      <h1 className="mt-4 text-2xl font-extrabold tracking-tight">{text.t("prediction.h1", { fixture })}</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         {prediction.league ? `${prediction.league} · ` : ""}
         <time dateTime={prediction.kickoff_time}>{formatKickoffFull(prediction.kickoff_time)}</time>
@@ -61,19 +62,19 @@ export default async function PredictionDetailPage({ params }: Props) {
 
       <dl className="mt-6 grid grid-cols-2 gap-4 rounded-2xl border border-border bg-card p-5 sm:grid-cols-4">
         <div>
-          <dt className="text-xs text-muted-foreground">Our pick</dt>
+          <dt className="text-xs text-muted-foreground">{text.t("prediction.pick")}</dt>
           <dd className="font-semibold">{prediction.original_prediction_type}</dd>
         </div>
         <div>
-          <dt className="text-xs text-muted-foreground">Odds</dt>
+          <dt className="text-xs text-muted-foreground">{text.t("prediction.odds")}</dt>
           <dd className="font-semibold">{prediction.original_odds !== null ? Number(prediction.original_odds).toFixed(2) : "—"}</dd>
         </div>
         <div>
-          <dt className="text-xs text-muted-foreground">Confidence</dt>
+          <dt className="text-xs text-muted-foreground">{text.t("prediction.confidence")}</dt>
           <dd className="font-semibold">{prediction.confidence !== null ? `${prediction.confidence}%` : "—"}</dd>
         </div>
         <div>
-          <dt className="text-xs text-muted-foreground">Result</dt>
+          <dt className="text-xs text-muted-foreground">{text.t("prediction.result")}</dt>
           <dd>
             {hasScore && <span className="mr-2 font-semibold">{prediction.home_score}–{prediction.away_score}</span>}
             <ResultBadge result={prediction.result} verified={prediction.result_approved} />
@@ -83,16 +84,16 @@ export default async function PredictionDetailPage({ params }: Props) {
 
       {prediction.analysis && (
         <section className="mt-6">
-          <h2 className="font-bold">Why we picked it</h2>
+          <h2 className="font-bold">{text.t("prediction.why")}</h2>
           <PlainContent text={prediction.analysis} className="mt-2 text-muted-foreground" />
         </section>
       )}
 
       {marketPage && (
         <p className="mt-6 text-sm">
-          More picks in this market:{" "}
+          {text.t("prediction.moreInMarket")}{" "}
           <Link href={`/tips/${marketPage.slug}`} className="font-medium text-brand hover:underline">
-            {marketPage.h1}
+            {plainTextOf(marketPage.h1)}
           </Link>
         </p>
       )}

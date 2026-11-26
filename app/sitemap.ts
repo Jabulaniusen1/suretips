@@ -3,24 +3,16 @@ import { siteOrigin } from "@/lib/env";
 import { createPublicClient } from "@/lib/supabase/public";
 import { MARKET_PAGES, applyMarketSelection, isMarketPageSlug } from "@/lib/seo/market-pages";
 import { isCustomPageIndexable } from "@/lib/data/custom-pages";
+import { getSiteText } from "@/lib/content/site-text";
+import type { LongPageSlug } from "@/lib/content/page-defaults";
 
 // Regenerated at most hourly. Lists only canonical, indexable, public URLs.
 // lastModified always comes from a real content change -- never "now".
 export const revalidate = 3600;
 
-/** When the copy of each static page last changed. Update when editing it. */
-const STATIC_PAGES: Array<{ path: string; updated: string }> = [
-  { path: "/about", updated: "2026-11-23" },
-  { path: "/methodology", updated: "2026-11-23" },
-  { path: "/editorial-standards", updated: "2026-11-19" },
-  { path: "/responsible-betting", updated: "2026-11-19" },
-  { path: "/contact", updated: "2026-11-19" },
-  { path: "/faq", updated: "2026-11-19" },
-  { path: "/terms", updated: "2026-11-19" },
-  { path: "/privacy", updated: "2026-11-19" },
-  { path: "/disclaimer", updated: "2026-11-19" },
-  { path: "/cookies", updated: "2026-11-19" },
-];
+/** Long pages edited in Admin > Site Content; lastmod is their "Last updated" date. */
+const LONG_PAGES: LongPageSlug[] = ["about", "methodology", "editorial-standards", "responsible-betting", "faq", "terms", "privacy", "disclaimer", "cookies"];
+const CONTACT_UPDATED = "2026-11-19";
 
 /** Hubs whose content is the prediction feed; fallback lastmod if the DB is unreachable. */
 const FEED_FALLBACK = "2026-11-19";
@@ -127,9 +119,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entries.push({ url: url(`/match/${match.external_fixture_id}`), lastModified: match.last_modified, changeFrequency: "daily", priority: 0.5 });
   }
 
-  for (const page of STATIC_PAGES) {
-    entries.push({ url: url(page.path), lastModified: page.updated, changeFrequency: "yearly", priority: 0.3 });
+  const text = await getSiteText();
+  for (const slug of LONG_PAGES) {
+    entries.push({ url: url(`/${slug}`), lastModified: text.pageUpdated(slug), changeFrequency: "yearly", priority: 0.3 });
   }
+  entries.push({ url: url("/contact"), lastModified: CONTACT_UPDATED, changeFrequency: "yearly", priority: 0.3 });
 
   return entries;
 }

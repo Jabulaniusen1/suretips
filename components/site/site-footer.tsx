@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Mail, Send } from "lucide-react";
 import { Logo } from "@/components/site/logo";
+import { PlainContent } from "@/components/content/plain-content";
 import { FacebookIcon, InstagramIcon, XIcon, YoutubeIcon } from "@/components/site/social-icons";
 import { getSiteConfig } from "@/lib/data/site-config";
 import { getActiveCompetitions } from "@/lib/data/competitions";
 import { getPublishedCustomPages } from "@/lib/data/custom-pages";
-import { getMarketPage } from "@/lib/seo/market-pages";
+import { getMarketPagesWithText, getSiteText } from "@/lib/content/site-text";
+import type { StaticContentKey } from "@/lib/content/registry";
 
 const FOOTER_MARKETS = [
   "free",
@@ -19,21 +21,22 @@ const FOOTER_MARKETS = [
   // "correct-score", // DISABLED (correct score)
 ];
 
-const TRUST_LINKS = [
-  { href: "/about", label: "About us" },
-  { href: "/methodology", label: "How our predictions work" },
-  { href: "/editorial-standards", label: "Editorial standards" },
-  { href: "/previous-results", label: "Previous results" },
-  { href: "/responsible-betting", label: "Responsible betting" },
-  { href: "/faq", label: "FAQ" },
-  { href: "/contact", label: "Contact" },
+// Labels are edited in Admin > Site Content > Footer.
+const TRUST_LINKS: Array<{ href: string; label: StaticContentKey }> = [
+  { href: "/about", label: "footer.about" },
+  { href: "/methodology", label: "footer.methodology" },
+  { href: "/editorial-standards", label: "footer.editorial" },
+  { href: "/previous-results", label: "footer.results" },
+  { href: "/responsible-betting", label: "footer.responsible" },
+  { href: "/faq", label: "footer.faq" },
+  { href: "/contact", label: "footer.contact" },
 ];
 
-const LEGAL_LINKS = [
-  { href: "/terms", label: "Terms" },
-  { href: "/privacy", label: "Privacy" },
-  { href: "/cookies", label: "Cookies" },
-  { href: "/disclaimer", label: "Disclaimer" },
+const LEGAL_LINKS: Array<{ href: string; label: StaticContentKey }> = [
+  { href: "/terms", label: "footer.terms" },
+  { href: "/privacy", label: "footer.privacy" },
+  { href: "/cookies", label: "footer.cookies" },
+  { href: "/disclaimer", label: "footer.disclaimerLink" },
 ];
 
 function SocialButton({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
@@ -60,7 +63,15 @@ function FooterColumn({ title, children }: { title: string; children: React.Reac
 }
 
 export async function SiteFooter() {
-  const [config, competitions, customPages] = await Promise.all([getSiteConfig(), getActiveCompetitions(), getPublishedCustomPages()]);
+  const [config, competitions, customPages, text, markets] = await Promise.all([
+    getSiteConfig(),
+    getActiveCompetitions(),
+    getPublishedCustomPages(),
+    getSiteText(),
+    getMarketPagesWithText(),
+  ]);
+  const tagline = text.t("footer.tagline");
+  const smallPrint = text.t("footer.disclaimer");
   const footerPages = customPages.filter((p) => p.show_in_footer);
   const socials = [
     { href: config.social_links.facebook, label: "Facebook", icon: FacebookIcon },
@@ -74,9 +85,7 @@ export async function SiteFooter() {
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-12 lg:px-8">
         <div className="lg:col-span-4">
           <Logo dark imgClassName="h-14 w-auto" />
-          <p className="mt-4 max-w-sm text-sm text-zinc-400">
-            Free football predictions, match data and a public record of every result we publish — wins and losses.
-          </p>
+          {tagline && <PlainContent text={tagline} className="mt-4 max-w-sm text-sm text-zinc-400" />}
           {(socials.length > 0 || config.telegram_url) && (
             <div className="mt-5 flex items-center gap-2.5">
               {socials.map(({ href, label, icon: Icon }) => (
@@ -91,21 +100,19 @@ export async function SiteFooter() {
               )}
             </div>
           )}
-          <p className="mt-6 max-w-sm text-xs text-zinc-500">
-            18+ only. Predictions are opinions based on data, not guarantees. Bet responsibly and within your means.
-          </p>
+          {smallPrint && <PlainContent text={smallPrint} className="mt-6 max-w-sm text-xs text-zinc-500" />}
         </div>
 
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:col-span-8">
-          <FooterColumn title="Predictions">
+          <FooterColumn title={text.t("footer.predictionsTitle")}>
             <li>
-              <Link href="/" className="hover:text-brand">Today&apos;s predictions</Link>
+              <Link href="/" className="hover:text-brand">{text.t("footer.today")}</Link>
             </li>
             <li>
-              <Link href="/predictions" className="hover:text-brand">Tomorrow&apos;s predictions</Link>
+              <Link href="/predictions" className="hover:text-brand">{text.t("footer.tomorrow")}</Link>
             </li>
             {FOOTER_MARKETS.map((slug) => {
-              const page = getMarketPage(slug);
+              const page = markets.bySlug(slug);
               return page ? (
                 <li key={slug}>
                   <Link href={`/tips/${slug}`} className="hover:text-brand">
@@ -122,11 +129,11 @@ export async function SiteFooter() {
               </li>
             ))}
             <li>
-              <Link href="/tips" className="font-medium text-zinc-300 hover:text-brand">All markets →</Link>
+              <Link href="/tips" className="font-medium text-zinc-300 hover:text-brand">{text.t("footer.allMarkets")}</Link>
             </li>
           </FooterColumn>
 
-          <FooterColumn title="Competitions">
+          <FooterColumn title={text.t("footer.competitionsTitle")}>
             {competitions.slice(0, 9).map((comp) => (
               <li key={comp.id}>
                 <Link href={`/competitions/${comp.slug}`} className="hover:text-brand">
@@ -135,20 +142,20 @@ export async function SiteFooter() {
               </li>
             ))}
             <li>
-              <Link href="/competitions" className="font-medium text-zinc-300 hover:text-brand">All competitions →</Link>
+              <Link href="/competitions" className="font-medium text-zinc-300 hover:text-brand">{text.t("footer.allCompetitions")}</Link>
             </li>
           </FooterColumn>
 
-          <FooterColumn title="Sure Match Tips">
+          <FooterColumn title={text.t("footer.siteTitle")}>
             {TRUST_LINKS.map((link) => (
               <li key={link.href}>
                 <Link href={link.href} className="hover:text-brand">
-                  {link.label}
+                  {text.t(link.label)}
                 </Link>
               </li>
             ))}
             <li>
-              <Link href="/blog" className="hover:text-brand">Blog</Link>
+              <Link href="/blog" className="hover:text-brand">{text.t("footer.blog")}</Link>
             </li>
           </FooterColumn>
         </div>
@@ -168,7 +175,7 @@ export async function SiteFooter() {
             {LEGAL_LINKS.map((link) => (
               <li key={link.href}>
                 <Link href={link.href} className="hover:text-brand">
-                  {link.label}
+                  {text.t(link.label)}
                 </Link>
               </li>
             ))}
@@ -180,7 +187,7 @@ export async function SiteFooter() {
             </li>
             */}
           </ul>
-          <p className="text-zinc-500">© {new Date().getFullYear()} Sure Match Tips</p>
+          <p className="text-zinc-500">{text.t("footer.copyright", { year: new Date().getFullYear() })}</p>
         </div>
       </div>
     </footer>

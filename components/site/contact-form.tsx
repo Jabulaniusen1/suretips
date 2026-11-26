@@ -7,7 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-export function ContactForm() {
+export interface ContactFormLabels {
+  name: string;
+  email: string;
+  message: string;
+  send: string;
+  sending: string;
+  success: string;
+}
+
+// Labels come from Admin > Site Content > Contact page.
+export function ContactForm({ labels }: { labels: ContactFormLabels }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -24,7 +34,7 @@ export function ContactForm() {
         body: JSON.stringify({ name, email, message, website }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "Failed to send");
-      toast.success("Message sent! We'll get back to you soon.");
+      toast.success(labels.success);
       setName("");
       setEmail("");
       setMessage("");
@@ -38,15 +48,15 @@ export function ContactForm() {
   return (
     <form onSubmit={handleSubmit} className="relative max-w-md space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="contact-name">Name</Label>
+        <Label htmlFor="contact-name">{labels.name}</Label>
         <Input id="contact-name" autoComplete="name" maxLength={100} value={name} onChange={(e) => setName(e.target.value)} required />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="contact-email">Email</Label>
+        <Label htmlFor="contact-email">{labels.email}</Label>
         <Input id="contact-email" type="email" autoComplete="email" maxLength={200} value={email} onChange={(e) => setEmail(e.target.value)} required />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="contact-message">Message</Label>
+        <Label htmlFor="contact-message">{labels.message}</Label>
         <Textarea id="contact-message" minLength={10} maxLength={5000} value={message} onChange={(e) => setMessage(e.target.value)} required rows={5} />
       </div>
       <div aria-hidden className="absolute -left-[9999px] h-0 overflow-hidden">
@@ -54,7 +64,7 @@ export function ContactForm() {
         <input id="contact-website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
       </div>
       <Button type="submit" disabled={submitting}>
-        {submitting ? "Sending…" : "Send Message"}
+        {submitting ? labels.sending : labels.send}
       </Button>
     </form>
   );
